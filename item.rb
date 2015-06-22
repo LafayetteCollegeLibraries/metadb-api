@@ -4,7 +4,7 @@ require_relative 'metadata'
 
   class Item
 
-    attr_reader :project, :number, :id, :file_name
+    attr_reader :project, :number, :id, :file_name, :file_path
     attr_accessor :fields, :custom_file_name, :thumbnail_file_name, :large_file_name, :fullsize_file_name
 
     # @todo Complete for technical metadata
@@ -41,6 +41,8 @@ require_relative 'metadata'
       @custom_file_name = base_file_name + '-800.jpg'
       @large_file_name = base_file_name + '-2000.jpg'
       @fullsize_file_name = base_file_name + '.jpg'
+
+      @file_path = File.join( @project.dir_path, @file_name )
 
       read if @fields.empty?
     end

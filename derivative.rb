@@ -21,7 +21,7 @@ module Derivatives
       @branding_text = options.fetch :branding_text, nil
       @image_write_path = options.fetch :image_write_path, IMAGE_WRITE_PATH
 
-      @input_image_path = options.fetch :input_image_path, item.file_name
+      @input_image_path = options.fetch :input_image_path, item.file_path
       @input_image = MiniMagick::Image.open(@input_image_path)
     end
 

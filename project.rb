@@ -1,14 +1,17 @@
 
 require 'csv'
+require_relative 'derivative'
+
+include Derivatives
 
   # Modeling MetaDB Project entities
   #
   class Project
 
     attr_accessor :items
-    attr_reader :session, :name
+    attr_reader :session, :name, :dir_path
 
-    def initialize(session, name, items = [])
+    def initialize(session, name, items = [], options = {})
 
       @session = session
       @name = name
@@ -17,9 +20,15 @@ require 'csv'
       # Uncomment
       # @items = (1..1808).to_a
 
+      @dir_path = options.fetch :dir_path, File.join("/var/metadb/master/", @name)
+
+      @derivative_options = options.keep_if { |k,v| [ :branding, :branding_text, :image_write_path ].include? k.to_sym }
+
       # Uncomment
       read if @items.empty?
       @items += items
+
+      @access_images = @items.map { |item| [ Derivative.new( item ),  LargeDerivative.new( item ),  CustomDerivative.new( item ),  ThumbnailDerivative.new( item ) ] }
     end
 
     def parse(csv_file_path)
@@ -60,6 +69,29 @@ require 'csv'
       end
 
       @items.map { |item| item.write }.reduce { |results, result| results or result }
+    end
+
+    # Derive all images (thumbnail, fullsize, large, and custom) for Items within the Project
+    #
+    #
+    def derive
+
+      @access_images.each do |access_image_set|
+
+        begin
+          
+          access_image_set.map { |access_image| access_image.derive access_image, @derivative_options }
+        rescue Exception
+
+          if respond_to? :logger
+
+            logger.error "Failed to generated the following derivatives: #{ex.message}"
+          else
+
+            $stderr.puts "Failed to generated the following derivatives: #{ex.message}"
+          end
+        end
+      end.reduce(:+)
     end
   end
   
