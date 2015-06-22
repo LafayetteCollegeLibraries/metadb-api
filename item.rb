@@ -30,10 +30,10 @@ require_relative 'metadata'
 
       if not project_name.nil?
 
-        base_file_name = project_name + '-' + ("%04d" % number)
+        base_file_name = 'lc-spcol-' + project_name + '-' + ("%04d" % number)
       else
 
-        base_file_name = project.name + '-' + ("%04d" % number)
+        base_file_name = 'lc-spcol-' + project.name + '-' + ("%04d" % number)
       end
 
       @file_name = base_file_name + '.tif'
@@ -116,7 +116,7 @@ require_relative 'metadata'
 
       if @project.session.conn.exec_params('SELECT * FROM projects_adminmd_descmd WHERE project_name=$1 AND item_number=$2', [ @project.name,
                                                                                                                                @number ]).values.empty?
-        
+
         @project.session.conn.exec_params("INSERT INTO items (project_name, item_number, file_name, thumbnail_file_name, custom_file_name, large_file_name, fullsize_file_name, checksum) VALUES($1, $2, $3, $4, $5, $6, $7, '')",
                                           [ @project.name,
                                             @number,

@@ -119,28 +119,6 @@
                                                         @md_type,
                                                       ]).values.empty?
 
-        puts "Inserting the record for #{@project_name} #{@element} #{@label}"
-        puts [ @project_name,
-               @element,
-               @label,
-               @md_type,
-               @large,
-
-               @date_searchable,
-               @date_readable,
-               @controlled,
-               @multiple,
-               @additions,
-               
-               @sorted,
-               @attribute_index,
-               @vocab_name,
-               @error,
-               # @id,
-               # nil,
-               # @ui_label,
-             ].to_s
-
         begin
           
           @field.item.project.session.conn.exec_params('INSERT INTO custom_attributes_adminmd_descmd (project_name, element, label, md_type,large,date_searchable,date_readable,controlled,multiple,additions,sorted,attribute_index,vocab_name,error,ui_label) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15 )',
