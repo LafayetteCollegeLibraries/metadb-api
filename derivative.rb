@@ -18,26 +18,40 @@ module Derivatives
       @item = item
       
       @branding = options.fetch :branding, BRANDING_NONE
-      @branding_text = options.fetch :branding, nil
+      @branding_text = options.fetch :branding_text, nil
       @image_write_path = options.fetch :image_write_path, IMAGE_WRITE_PATH
 
-      input_image_path = options.fetch :input_image_path, item.file_name
-      @input_image = MiniMagick::Image.open(input_image_path)
+      @input_image_path = options.fetch :input_image_path, item.file_name
+      @input_image = MiniMagick::Image.open(@input_image_path)
     end
 
     def derive
 
-      @input_image.resize "#{@width}x#{@height}" unless @width.nil? or @height.nil?
-      @input_image.format "jpg"
-
       output_image_name = "lc-spcol-#{@item.project.name}-#{ '%04d' % @item.number}"
 
-      output_image_name += @width.to_s unless @width.nil?
+      output_image_name += "-#{@width}" unless @width.nil?
       output_image_name += ".jpg"
 
       output_image_path = "#{@image_write_path}/#{output_image_name}"
 
-      @input_image.write output_image_path
+      if not @branding_text.nil? and @branding != BRANDING_NONE
+
+        # @input_image.label
+        MiniMagick::Tool::Convert.new do |convert|
+          convert << @input_image_path
+          convert << "#{@width}x#{@height}" unless @width.nil? or @height.nil?
+          convert << "label:'#{@branding_text}'"
+          convert << "+swap" if @branding == BRANDING_OVER
+          convert << "-append"
+          convert << output_image_path
+        end
+      else
+
+        @input_image.resize "#{@width}x#{@height}" unless @width.nil? or @height.nil?
+        @input_image.format "jpg"
+
+        @input_image.write output_image_path
+      end
 
       class_name_segments = self.class.name.match /\:{2}(.+?)Derivative$/
       if class_name_segments
@@ -58,12 +72,12 @@ module Derivatives
 
   class ThumbnailDerivative < Derivative
 
-    def initialize(options = {})
+    def initialize(item, options = {})
 
       @width = options.fetch :width, 300
       @height = options.fetch :height, 300
 
-      super options
+      super item, options
     end
   end
 
@@ -73,23 +87,23 @@ module Derivatives
 
   class LargeDerivative < Derivative
 
-    def initialize(options = {})
+    def initialize(item, options = {})
 
-      @width = options.fetch :width, 300
-      @height = options.fetch :height, 300
+      @width = options.fetch :width, 2000
+      @height = options.fetch :height, 2000
 
-      super options
+      super item, options
     end
   end
 
   class CustomDerivative < Derivative
 
-    def initialize(options = {})
+    def initialize(item, options = {})
 
       @width = options.fetch :width, 800
       @height = options.fetch :height, 800
 
-      super options
+      super item, options
     end
   end
 end
