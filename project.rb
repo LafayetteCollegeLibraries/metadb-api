@@ -11,27 +11,95 @@ include Derivatives
     attr_accessor :items
     attr_reader :session, :name, :dir_path
 
-    def initialize(session, name, items = [], options = {})
+    def initialize(session, name, items = nil, options = {})
 
       @session = session
       @name = name
 
-      @items = []
+      @items = items || []
       # Uncomment
       # @items = (1..1808).to_a
 
       @dir_path = options.fetch :dir_path, File.join("/var/metadb/master/", @name)
+      @access_path = options.fetch :dir_path, File.join("/var/metadb/access/", @name)
 
       @derivative_options = options.keep_if { |k,v| [ :branding, :branding_text, :image_write_path ].include? k.to_sym }
 
+      # Populate the fields
+      @field_classes = field_classes
+
       # Uncomment
-      read if @items.empty?
-      @items += items
+      read if items.nil?
+      # @items += items
 
       @access_images = @items.map { |item| [ Derivative.new( item ),  LargeDerivative.new( item ),  CustomDerivative.new( item ),  ThumbnailDerivative.new( item ) ] }
     end
 
-    def parse(csv_file_path)
+    # Retrieve the classes for the fields in the project
+    #
+    # @return [Array] an array of Class Objects (derived from MetadataRecord)
+    def field_classes
+
+      classes = {}
+      
+      # Retrieve the administrative and descriptive metadata
+      #
+      res = @session.conn.exec_params('SELECT * FROM projects_adminmd_descmd WHERE project_name=$1 LIMIT 1', [ @name ])
+      res.each do |item_record|
+
+        # classes << Item.get_field_class(item_record['element'], item_record['label'])
+
+        if classes.has_key? item_record['element']
+
+          classes[item_record['element']][item_record['label']] = Item.get_field_class(item_record['element'], item_record['label'])
+        else
+
+          classes[item_record['element']] = { item_record['label'] => Item.get_field_class(item_record['element'], item_record['label']) }
+        end
+      end
+
+      # Append the technical metadata fields
+      #
+      res = @session.conn.exec_params('SELECT * FROM projects_techmd WHERE project_name=$1 LIMIT 1', [ @name ])
+      res.each do |item_record|
+
+        # classes << TechnicalMetadataRecord.new(self, item_record['tech_element'], item_record['tech_label'], item_record['data'])
+        if classes.has_key? item_record['tech_element']
+
+          classes[item_record['tech_element']][item_record['tech_label']] = TechnicalMetadataRecord
+        else
+
+          classes[item_record['tech_element']] = { item_record['tech_label'] => TechnicalMetadataRecord }
+        end
+      end
+
+      classes
+    end
+
+    # Generate a set of blank metadata fields for a newly-added Item
+    #
+    # @param [Item] the Item to which the newly-created metadata field is related
+    # @return [Array] an array of Class Objects (derived from MetadataRecord)
+    def fields(item)
+
+      fields = []
+
+      @field_classes.each_pair do |element, value|
+
+        value.each_pair do |label, klass|
+    
+          fields << klass.new(item, element, label)
+
+          # Create the new attribute also?
+        end
+      end
+
+      fields
+    end
+
+    # Parse a CSV file and create the new Items
+    #
+    def parse_from_csv(csv_file_path)
 
       data = CSV.read(csv_file_path)
       headers = data.shift
@@ -54,7 +122,7 @@ include Derivatives
       # res = @session.conn.exec_params('SELECT item_number FROM items WHERE project_name=$1 ORDER BY item_number LIMIT 20', [@name])
       res.each do |item_record|
 
-        puts "Instantiating an item record for #{item_record['item_number']}"
+        # puts "Instantiating an item record for #{item_record['item_number']}"
 
         # @items << Item.new(self, item_record['item_number'], item_record)
         @items << Item.new(self, item_record['item_number'], item_record['id'])
@@ -93,6 +161,48 @@ include Derivatives
         end
       end.reduce(:+)
     end
+
+    # Append a new Item to a given Project
+    #
+    # @param options [Hash] the options for the Item
+    def add(options = {})
+
+      item = options.fetch :item, nil
+      if item.nil?
+
+        item_number = options.fetch :number, nil
+        if item_number.nil? and @items.last.nil?
+
+          item_number = 1
+        else
+
+          item_number = @items.last.number + 1
+        end
+        
+        item_id = options.fetch :id, nil
+        item_fields = options.fetch :fields, @fields
+
+        item = Item.new self, item_number, item_id, item_fields
+      end
+
+      item.write
+
+      @items << item
+    end
+
+    # Parse the Project directory for new master image files, and create Items for any new Items ingested
+    #
+    def parse
+
+      # Dir.glob("#{@dir_path}/*.tiff?|jpe?g") do |master_file_name|
+      Dir.glob("#{@dir_path}/*.{tif,tiff,TIF,TIFF,jpg,jpeg,JPG,JPEG}") do |master_file_name|
+
+        # Attempt to construct the Item using the file path alone
+        add :item => Item.new( self, file_path: File.join( @dir_path, master_file_name ) )
+      end
+    end
+
+    
   end
   
   class ProjectSet

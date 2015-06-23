@@ -8,8 +8,8 @@ context 'when generating all derivatives' do
   let(:item) do
 
     instance_double( 'Item',
-                     :file_name => 'lc-spcol-project-0001.tif',
-                     :file_path => File.join( File.dirname(__FILE__), 'fixtures', 'lc-spcol-project-0001.tif'),
+                     :file_name => 'lc-spcol-test-project-0003.tif',
+                     :file_path => File.join( File.dirname(__FILE__), 'fixtures', 'lc-spcol-test-project-0003.tif'),
                      :project => project,
                      :number => 1)
   end
@@ -18,8 +18,8 @@ context 'when generating all derivatives' do
 
     instance_double( 'Item',
 
-                     :file_name => 'lc-spcol-project-0001.tif',
-                     :file_path => File.join( File.dirname(__FILE__), 'fixtures', 'lc-spcol-project-0001.tif'),
+                     :file_name => 'lc-spcol-test-project-0003.tif',
+                     :file_path => File.join( File.dirname(__FILE__), 'fixtures', 'lc-spcol-test-project-0003.tif'),
                      :project => project,
                      :number => 2)
   end
@@ -28,8 +28,8 @@ context 'when generating all derivatives' do
 
     instance_double( 'Item',
 
-                     :file_name => 'lc-spcol-project-0001.tif',
-                     :file_path => File.join( File.dirname(__FILE__), 'fixtures', 'lc-spcol-project-0001.tif'),
+                     :file_name => 'lc-spcol-test-project-0003.tif',
+                     :file_path => File.join( File.dirname(__FILE__), 'fixtures', 'lc-spcol-test-project-0003.tif'),
                      :project => project,
                      :number => 3)
     

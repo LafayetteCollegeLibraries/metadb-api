@@ -21,28 +21,60 @@ require_relative 'metadata'
 
     #
     #
-    def initialize(project, number, id = nil, fields = [], project_name = nil)
+    def initialize(project, number = nil, id = nil, fields = [], project_name = nil, file_path: nil)
 
       @project = project
       @number = number
       @id = id
       @fields = fields
 
-      if not project_name.nil?
+      if not file_path.nil?
 
-        base_file_name = 'lc-spcol-' + project_name + '-' + ("%04d" % number)
+        # The following file naming scheme is enforced:
+        #
+        # * lc-spcol-beyond-steel-0007.tif
+        # * lc-spcol-srida-001078.tiff
+        # * biol101-201009-assignment02-0806.jpg
+        # * lc-geology-slides-0005.jpeg
+        
+        file_path_m = /(?:lc\-spcol|biol101|lc\-geology)\-([a-zA-Z\-]+?)\-(\d{4,6})/.match file_path
+
+        raise Exception.new "Failed to parse the master image file path #{file_path}" unless file_path_m
+
+        @id = file_path_m[2]
+        @number = @id.to_i
+
+        @file_name = file_path.split('/').last
+        base_file_name = @file_name.split('.').first
+        
+        @file_path = file_path
+      elsif number.nil?
+
+        raise Exception.new "Cannot create a new Item without a number"
       else
 
-        base_file_name = 'lc-spcol-' + project.name + '-' + ("%04d" % number)
+        if not project_name.nil?
+
+          base_file_name = 'lc-spcol-' + project_name + '-' + ("%04d" % number)
+        else
+
+          base_file_name = 'lc-spcol-' + project.name + '-' + ("%04d" % number)
+        end
+
+        # This assumes that all files are images in the TIFF
+        # @todo Refactor
+        @file_name = base_file_name + '.tif'
+
+        @file_path = File.join( @project.dir_path, @file_name )
+
+        # Ensure that the file exists, or raise an exception
+        raise Exception.new "Cannot create a new Item for #{@file_path} unless the file exists" unless File.exist? @file_path
       end
 
-      @file_name = base_file_name + '.tif'
       @thumbnail_file_name = base_file_name + '-300.jpg'
       @custom_file_name = base_file_name + '-800.jpg'
       @large_file_name = base_file_name + '-2000.jpg'
       @fullsize_file_name = base_file_name + '.jpg'
-
-      @file_path = File.join( @project.dir_path, @file_name )
 
       read if @fields.empty?
     end

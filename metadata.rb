@@ -229,8 +229,9 @@
 
     def read
 
-      @item.project.session.conn.exec_params('SELECT data,attribute_id FROM projects_adminmd_descmd WHERE project_name=$1 AND item_number=$2 AND md_type=$3 AND element=$4 AND label=$5',
-                                             [@item.project.name, @item.number, @md_type, @element, @label]).select do |row|
+      res = @item.project.session.conn.exec_params('SELECT data,attribute_id FROM projects_adminmd_descmd WHERE project_name=$1 AND item_number=$2 AND md_type=$3 AND element=$4 AND label=$5',
+                                                   [@item.project.name, @item.number, @md_type, @element, @label])
+      res.each do |row|
 
         @data = row['data']
 
