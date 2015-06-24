@@ -58,7 +58,16 @@ require_relative 'metadata'
           base_file_name = 'lc-spcol-' + project_name + '-' + ("%04d" % number)
         else
 
-          base_file_name = 'lc-spcol-' + project.name + '-' + ("%04d" % number)
+          # Extended handling for project with anomalous file naming schemes
+          # @todo Refactor
+          if project.name == 'srida'
+
+            # lc-spcol-srida-001094.tif
+            base_file_name = 'lc-spcol-' + project.name + '-' + ("%06d" % number)
+          else
+
+            base_file_name = 'lc-spcol-' + project.name + '-' + ("%04d" % number)
+          end
         end
 
         # This assumes that all files are images in the TIFF
@@ -90,9 +99,6 @@ require_relative 'metadata'
       project ||= @project
       number ||= @number
       # fields = @fields if fields.empty?
-
-      #puts 'new item number: ' + number
-      #raise NotImplementedError.new
 
       new_item = Item.new(project, number, nil, [], project_name)
 

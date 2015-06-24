@@ -21,9 +21,10 @@ include Derivatives
       # @items = (1..1808).to_a
 
       @dir_path = options.fetch :dir_path, File.join("/var/metadb/master/", @name)
-      @access_path = options.fetch :dir_path, File.join("/var/metadb/access/", @name)
+      @access_path = options.fetch :access_path, File.join("/var/metadb/access/", @name)
 
-      @derivative_options = options.keep_if { |k,v| [ :branding, :branding_text, :image_write_path ].include? k.to_sym }
+      # @derivative_options = options.keep_if { |k,v| [ :branding, :branding_text, :image_write_path ].include? k.to_sym }
+      @derivative_options = { }
 
       # Populate the fields
       @field_classes = field_classes
@@ -32,7 +33,7 @@ include Derivatives
       read if items.nil?
       # @items += items
 
-      @access_images = @items.map { |item| [ Derivative.new( item ),  LargeDerivative.new( item ),  CustomDerivative.new( item ),  ThumbnailDerivative.new( item ) ] }
+      @access_images = @items.map { |item| [ Derivative.new( item, @derivative_options ),  LargeDerivative.new( item, @derivative_options ),  CustomDerivative.new( item, @derivative_options ),  ThumbnailDerivative.new( item, @derivative_options ) ] }
     end
 
     # Retrieve the classes for the fields in the project
@@ -119,13 +120,23 @@ include Derivatives
       res = @session.conn.exec_params('SELECT item_number,id FROM items WHERE project_name=$1 ORDER BY item_number', [@name])
 
       # @todo Remove for debugging
-      # res = @session.conn.exec_params('SELECT item_number FROM items WHERE project_name=$1 ORDER BY item_number LIMIT 20', [@name])
       res.each do |item_record|
 
         # puts "Instantiating an item record for #{item_record['item_number']}"
 
         # @items << Item.new(self, item_record['item_number'], item_record)
         @items << Item.new(self, item_record['item_number'], item_record['id'])
+      end
+
+      # Retrieve settings in relation to project derivative generation
+      res = @session.conn.exec_params('SELECT annotation_mode, brand, bg_color, fg_color FROM derivative_settings WHERE project_name=$1', [@name])
+      res.each do |derivative_settings|
+
+        @derivative_options.merge!({ :branding => derivative_settings['annotation_mode'],
+                                     :branding_text => derivative_settings['brand'],
+                                     :bg_color => derivative_settings['bg_color'],
+                                     :fg_color => derivative_settings['fg_color']
+                                   })
       end
     end
 
@@ -148,8 +159,8 @@ include Derivatives
 
         begin
           
-          access_image_set.map { |access_image| access_image.derive access_image, @derivative_options }
-        rescue Exception
+          access_image_set.map { |access_image| access_image.derive }
+        rescue Exception => ex
 
           if respond_to? :logger
 

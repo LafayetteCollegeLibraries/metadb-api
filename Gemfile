@@ -5,4 +5,4 @@ gem 'rspec'
 gem 'rspec-mocks'
 gem 'mini_magick'
 gem 'coveralls', require: false
-
+gem 'rake'

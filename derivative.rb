@@ -17,15 +17,40 @@ module Derivatives
 
       @item = item
       
+      # @todo Refactor
       @branding = options.fetch :branding, BRANDING_NONE
       @branding_text = options.fetch :branding_text, nil
-      @image_write_path = options.fetch :image_write_path, IMAGE_WRITE_PATH
+#      @bg_color = options.fetch :bg_color, '#000000'
+#      @fg_color = options.fetch :fg_color, '#FFFFFF'
+      @bg_color = options.fetch :bg_color, 'White'
+      @fg_color = options.fetch :fg_color, 'Black'
 
+      @image_write_path = options.fetch :image_write_path, IMAGE_WRITE_PATH
       @input_image_path = options.fetch :input_image_path, item.file_path
-      @input_image = MiniMagick::Image.open(@input_image_path)
     end
 
     def derive
+
+      @input_image = MiniMagick::Image.open(@input_image_path)
+
+      current_or_new_width = @width || @input_image.width
+
+      @font_size = case current_or_new_width
+                   when 300..500
+                     8
+                   when 500..1000
+                     16
+                   when 1000..1400
+                     24
+                   when 1400..1800
+                     48
+                   when 1800..2200
+                     72
+                   when 2200..3000
+                     85
+                   else
+                     100
+                   end
 
       output_image_name = "lc-spcol-#{@item.project.name}-#{ '%04d' % @item.number}"
 
@@ -34,23 +59,40 @@ module Derivatives
 
       output_image_path = "#{@image_write_path}/#{output_image_name}"
 
-      if not @branding_text.nil? and @branding != BRANDING_NONE
+      MiniMagick::Tool::Convert.new do |convert|
 
-        # @input_image.label
-        MiniMagick::Tool::Convert.new do |convert|
-          convert << @input_image_path
-          convert << "#{@width}x#{@height}" unless @width.nil? or @height.nil?
-          convert << "label:'#{@branding_text}'"
+        unless @width.nil? or @height.nil?
+
+          convert << '-resize'
+          convert << "#{@width}x"
+        end
+
+        convert << @input_image_path
+
+        if not @branding_text.nil? and @branding != BRANDING_NONE
+
+          convert << "-size"
+          convert << "#{current_or_new_width}x"
+
+          convert << "-gravity"
+          convert << "Center"
+
+          convert << "-font"
+          convert << "Bitstream-Charter-Regular"
+
+          unless @font_size.nil?
+
+            convert << "-pointsize"
+            convert << @font_size
+          end
+          
+          convert << "caption:'#{@branding_text}'"
+
           convert << "+swap" if @branding == BRANDING_OVER
           convert << "-append"
-          convert << output_image_path
         end
-      else
 
-        @input_image.resize "#{@width}x#{@height}" unless @width.nil? or @height.nil?
-        @input_image.format "jpg"
-
-        @input_image.write output_image_path
+        convert << output_image_path
       end
 
       class_name_segments = self.class.name.match /\:{2}(.+?)Derivative$/
@@ -76,6 +118,9 @@ module Derivatives
 
       @width = options.fetch :width, 300
       @height = options.fetch :height, 300
+
+      # Ensure that the thumbnails are not branded
+      options[:branding] = BRANDING_NONE
 
       super item, options
     end
