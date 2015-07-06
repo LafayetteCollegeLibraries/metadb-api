@@ -11,14 +11,16 @@ module Derivatives
 
   class Derivative
 
-    attr_reader :output_image
+    attr_reader :output_image, :item
 
     def initialize(item, options = {})
 
       @item = item
       
       # @todo Refactor
-      @branding = options.fetch :branding, BRANDING_NONE
+      @branding = options.fetch :branding, BRANDING_UNDER
+      # @branding = BRANDING_UNDER
+
       @branding_text = options.fetch :branding_text, nil
 #      @bg_color = options.fetch :bg_color, '#000000'
 #      @fg_color = options.fetch :fg_color, '#FFFFFF'
@@ -35,6 +37,7 @@ module Derivatives
 
       current_or_new_width = @width || @input_image.width
 
+=begin
       @font_size = case current_or_new_width
                    when 300..500
                      8
@@ -51,8 +54,28 @@ module Derivatives
                    else
                      100
                    end
+=end
+      @font_size = case current_or_new_width
+                   when 300..500
+                     4
+                   when 500..1000
+                     8
+                   when 1000..1400
+                     16
+                   when 1400..2000
+                     16
+                   else
+                     24
+                   end
 
-      output_image_name = "lc-spcol-#{@item.project.name}-#{ '%04d' % @item.number}"
+      # Not for srida
+      if @item.project.name == 'srida'
+
+        output_image_name = "lc-spcol-#{@item.project.name}-#{ '%06d' % @item.number}"
+      else
+
+        output_image_name = "lc-spcol-#{@item.project.name}-#{ '%04d' % @item.number}"
+      end
 
       output_image_name += "-#{@width}" unless @width.nil?
       output_image_name += ".jpg"
@@ -86,7 +109,7 @@ module Derivatives
             convert << @font_size
           end
           
-          convert << "caption:'#{@branding_text}'"
+          convert << "caption:#{@branding_text}"
 
           convert << "+swap" if @branding == BRANDING_OVER
           convert << "-append"
@@ -105,7 +128,9 @@ module Derivatives
       end
 
       @item.instance_variable_set "@#{class_name_type}_file_name", output_image_name
-      @item.write
+      # @item.write
+
+      @input_image.destroy!
 
       # @output_image_path = File.new(output_image_path)
       output_image_path

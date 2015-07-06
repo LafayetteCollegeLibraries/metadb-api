@@ -70,14 +70,56 @@ require_relative 'metadata'
           end
         end
 
+=begin
+        if project.name == 'srida'
+
+          @file_name = base_file_name + '.jpeg'
+        else
+
+          # This assumes that all files are images in the TIFF
+          # @todo Refactor
+          @file_name = base_file_name + '.tif'
+        end
+=end
+
+        if project.name == 'srida'
+
+          file_exts = ['.tif', '.jpeg', '.jpg']
+        else
+
+          file_exts = ['.tif']
+        end
+
+        files_paths = file_exts.select do |file_ext|
+
+          file_name = base_file_name + file_ext
+          file_path = File.join( @project.dir_path, file_name )
+          File.exist? file_path
+        end
+
+        if files_paths.empty?
+
+          raise Exception.new "Cannot create a new Item for #{base_file_name} unless the file exists"
+        else
+
+          # Only use the first file path
+          file_ext = files_paths.first
+          @file_name = base_file_name + file_ext
+          @file_path = File.join( @project.dir_path, @file_name )
+        end
+
+=begin
         # This assumes that all files are images in the TIFF
         # @todo Refactor
         @file_name = base_file_name + '.tif'
-
         @file_path = File.join( @project.dir_path, @file_name )
+=end
 
+=begin
         # Ensure that the file exists, or raise an exception
         raise Exception.new "Cannot create a new Item for #{@file_path} unless the file exists" unless File.exist? @file_path
+=end
+
       end
 
       @thumbnail_file_name = base_file_name + '-300.jpg'

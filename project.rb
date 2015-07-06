@@ -23,17 +23,18 @@ include Derivatives
       @dir_path = options.fetch :dir_path, File.join("/var/metadb/master/", @name)
       @access_path = options.fetch :access_path, File.join("/var/metadb/access/", @name)
 
-      # @derivative_options = options.keep_if { |k,v| [ :branding, :branding_text, :image_write_path ].include? k.to_sym }
-      @derivative_options = { }
-
       # Populate the fields
       @field_classes = field_classes
+
+      # @derivative_options = options.keep_if { |k,v| [ :branding, :branding_text, :image_write_path ].include? k.to_sym }
+      @derivative_options = { :image_write_path => @access_path }
 
       # Uncomment
       read if items.nil?
       # @items += items
 
       @access_images = @items.map { |item| [ Derivative.new( item, @derivative_options ),  LargeDerivative.new( item, @derivative_options ),  CustomDerivative.new( item, @derivative_options ),  ThumbnailDerivative.new( item, @derivative_options ) ] }
+      # @access_images = @items.map { |item| [ ThumbnailDerivative.new( item, @derivative_options ) ] }
     end
 
     # Retrieve the classes for the fields in the project
@@ -122,7 +123,13 @@ include Derivatives
       # @todo Remove for debugging
       res.each do |item_record|
 
-        # puts "Instantiating an item record for #{item_record['item_number']}"
+        if self.respond_to? :logger
+
+          logger.info "Instantiating an item record for #{item_record['item_number']}"
+        else
+
+          puts "Instantiating an item record for #{item_record['item_number']}"
+        end
 
         # @items << Item.new(self, item_record['item_number'], item_record)
         @items << Item.new(self, item_record['item_number'], item_record['id'])
@@ -151,11 +158,30 @@ include Derivatives
     end
 
     # Derive all images (thumbnail, fullsize, large, and custom) for Items within the Project
+    # @param init [Fixnum] Beginning of the range
+    # @param term [Fixnum] End of the range
     #
-    #
-    def derive
+    def derive(init = nil, term = nil)
 
-      @access_images.each do |access_image_set|
+      init = init || @access_images.first.first.item.number
+      term = term || @access_images.last.first.item.number
+
+      init = init.to_i
+      term = term.to_i
+
+      access_images = @access_images.select do |access_image_set|
+
+        # access_image_set.first.item.number >= init and access_image_set.first.item.number <= term
+
+        # Why does to_i need to be explicitly invoked?
+        #
+        access_image_set.first.item.number.to_i >= init and access_image_set.first.item.number.to_i <= term
+      end
+
+#      puts access_images
+#      exit(1)
+
+      access_images.each do |access_image_set|
 
         begin
           
@@ -213,7 +239,51 @@ include Derivatives
       end
     end
 
-    
+    # Prefix the title.english field for all Items within a given collection
+    # @param (String) prefix The prefix which is to be prepended to the dc.title field
+    #
+    def prefix_titles(prefix, title_element = 'title', title_label = 'english')
+
+      @items.each do |item|
+
+=begin
+        title_fields = item.fields.select { |field| field.element == title_element and field.label == title_label }
+        title_fields.each do |title_field|
+
+          title_field.data = "[#{prefix}#{"%04d" % item.number}] #{title_field.data}"
+        end
+=end
+        item.fields.each do |item_field|
+
+          item_field.data = "[#{prefix}#{"%04d" % item.number}] #{item_field.data}" if item_field.element == title_element and item_field.label == title_label
+          item_field.update
+        end
+
+#        item.write
+      end
+    end
+
+    # Set the default values of a given field to a string value
+    # @param (Array) fields A mapping consisting of the field element, field label, and default field value
+    #
+    def set_default_values(fields)
+
+      @items.each do |item|
+
+        fields.each do |field_options|
+
+=begin
+          item_fields = item.fields.select { |item_field| item_field.element == field_options[:element] and item_field.label == field_options[:label] }
+=end
+          item.fields.each do |item_field|
+
+            item_field.data = field_options[:value] if item_field.element == field_options[:element] and item_field.label == field_options[:label]
+          end
+        end
+
+        item.write
+      end
+    end
   end
   
   class ProjectSet
