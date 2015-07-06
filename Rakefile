@@ -21,4 +21,13 @@ namespace :metadb do
     session = Session.new args.user, args[:password], args[:project_name], args.host
     session.project.prefix_titles args.prefix
   end
+
+  desc 'Set the default field values for Items within a Project'
+  task :set_default_values, [:user, :password, :project_name, :element, :label, :data, :host] do |t, args|
+
+    args.with_defaults :host => 'localhost'
+
+    session = Session.new args.user, args[:password], args[:project_name], args.host
+    session.project.set_default_values [ { :element => args.element, :label => args.label, :data => args.data } ]
+  end
 end

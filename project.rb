@@ -246,20 +246,11 @@ include Derivatives
 
       @items.each do |item|
 
-=begin
-        title_fields = item.fields.select { |field| field.element == title_element and field.label == title_label }
-        title_fields.each do |title_field|
-
-          title_field.data = "[#{prefix}#{"%04d" % item.number}] #{title_field.data}"
-        end
-=end
         item.fields.each do |item_field|
 
           item_field.data = "[#{prefix}#{"%04d" % item.number}] #{item_field.data}" if item_field.element == title_element and item_field.label == title_label
           item_field.update
         end
-
-#        item.write
       end
     end
 
@@ -272,16 +263,12 @@ include Derivatives
 
         fields.each do |field_options|
 
-=begin
-          item_fields = item.fields.select { |item_field| item_field.element == field_options[:element] and item_field.label == field_options[:label] }
-=end
           item.fields.each do |item_field|
 
-            item_field.data = field_options[:value] if item_field.element == field_options[:element] and item_field.label == field_options[:label]
+            item_field.data = field_options[:data] if item_field.element == field_options[:element] and item_field.label == field_options[:label]
+            item_field.update
           end
         end
-
-        item.write
       end
     end
   end
