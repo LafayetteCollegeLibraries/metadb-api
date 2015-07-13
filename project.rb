@@ -157,6 +157,8 @@ include Derivatives
       @items.map { |item| item.write }.reduce { |results, result| results or result }
     end
 
+
+
     # Derive all images (thumbnail, fullsize, large, and custom) for Items within the Project
     # @param init [Fixnum] Beginning of the range
     # @param term [Fixnum] End of the range
@@ -178,9 +180,6 @@ include Derivatives
         access_image_set.first.item.number.to_i >= init and access_image_set.first.item.number.to_i <= term
       end
 
-#      puts access_images
-#      exit(1)
-
       access_images.each do |access_image_set|
 
         begin
@@ -197,6 +196,51 @@ include Derivatives
           end
         end
       end.reduce(:+)
+    end
+
+    # Derive all thumbnail images for Items within the Project
+    # @param init [Fixnum] Beginning of the range
+    # @param term [Fixnum] End of the range
+    #
+    def derive_thumbnails(init = nil, term = nil)
+
+      init = init || @access_images.first.first.item.number
+      term = term || @access_images.last.first.item.number
+
+      init = init.to_i
+      term = term.to_i
+
+      access_images = @access_images.select do |access_image_set|
+
+        # access_image_set.first.item.number >= init and access_image_set.first.item.number <= term
+
+        # Why does to_i need to be explicitly invoked?
+        #
+        access_image_set.first.item.number.to_i >= init and access_image_set.first.item.number.to_i <= term
+      end
+
+      access_images.each do |access_image_set|
+
+        begin
+          
+          access_image_set.select do |access_image|
+
+            access_image.is_a? ThumbnailDerivative
+          end.map do |access_image|
+
+            access_image.derive
+          end
+        rescue Exception => ex
+
+          if respond_to? :logger
+
+            logger.error "Failed to generated the following derivatives: #{ex.message}"
+          else
+
+            $stderr.puts "Failed to generated the following derivatives: #{ex.message}"
+          end
+        end
+      end.reduce(:+)      
     end
 
     # Append a new Item to a given Project
@@ -312,10 +356,6 @@ include Derivatives
         # project.items.slice(i - 1, subset_length).each do |item|
         project.items.slice(project_start, project_length).each do |item|
 
-          puts "Cloning the item record for #{item.number}"
-          # Debugging
-          # puts "Cloning the item record for #{item}"
-          
           # Clones the MetaDB Item, and all associated fields
           # Uncomment
           item = item.clone(child_project, nil, [], 'lc-spcol-' + project.name)
