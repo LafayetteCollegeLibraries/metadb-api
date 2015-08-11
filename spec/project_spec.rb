@@ -83,6 +83,14 @@ describe 'Project' do
     end
   end
 
+  describe '.split' do
+
+    it 'splits a project into 3 subsets' do
+
+      nil
+    end
+  end
+
   describe '#derive' do
 
     let(:derivative) { instance_double('Derivative', :item => item, :derive => [] ) }

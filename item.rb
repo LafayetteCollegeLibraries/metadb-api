@@ -37,12 +37,13 @@ require_relative 'metadata'
         # * biol101-201009-assignment02-0806.jpg
         # * lc-geology-slides-0005.jpeg
         
-        file_path_m = /(?:lc\-spcol|biol101|lc\-geology)\-([a-zA-Z\-]+?)\-(\d{4,6})/.match file_path
-
+        file_path_m = /\-(\d{4,6})\.(?:tiff|jpeg|tif|jpg)/.match file_path
         raise Exception.new "Failed to parse the master image file path #{file_path}" unless file_path_m
 
-        @id = file_path_m[2]
-        @number = @id.to_i
+        # ?
+        # @id = file_path_m[2]
+        # @number = @id.to_i
+        @number = file_path_m[1].to_i
 
         @file_name = file_path.split('/').last
         base_file_name = @file_name.split('.').first
@@ -94,6 +95,7 @@ require_relative 'metadata'
 
           file_name = base_file_name + file_ext
           file_path = File.join( @project.dir_path, file_name )
+
           File.exist? file_path
         end
 
@@ -136,20 +138,24 @@ require_relative 'metadata'
     # @param number
     # @param fields
     #
-    def clone(project, number = nil, fields = [], project_name = nil)
+    def clone(project, number = nil, fields = [], dir_path = nil, project_name = nil)
       
       project ||= @project
       number ||= @number
+      number = number.to_i
       # fields = @fields if fields.empty?
 
-      new_item = Item.new(project, number, nil, [], project_name)
+      # /var/metadb/master/imperial-postcards/lc-spcol-imperial-postcards-1808.tif
+      # base_file_name = 'lc-spcol-' + project.name + '-' + ("%04d" % number)
+      # cloned_file_path = 'lc-spcol-' + project.name + '-' + ("%04d" % number) + '.tif'
+      cloned_file_path = File.join( dir_path, 'lc-spcol-' + project_name + '-' + ("%04d" % number) + '.tif' )
+      new_item = Item.new(project, number, nil, [], project_name, file_path: cloned_file_path)
 
       if fields.empty?
 
         fields = @fields.each do |field|
 
           # @logger.info 'Cloning the field ' + field.element + '.' + field.label  + ' from ' + @number + ' to ' + number
-
           new_field = field.class.new(new_item, field.element, field.label, field.data)
 
           # For each new field, an accompanying attribute must also be instantiated
@@ -158,9 +164,11 @@ require_relative 'metadata'
 
           if new_field.is_a? AdminDescRecord
 
+            # puts 'Cloning the field ' + field.element + '.' + field.label + " (#{field.attribute.attribute_index})"
             new_field.attribute = field.attribute.clone new_field, field.attribute.attribute_index
           else
 
+            # puts 'Cloning the field ' + field.element + '.' + field.label
             new_field.attribute = field.attribute.clone new_field
           end
 
@@ -193,12 +201,11 @@ require_relative 'metadata'
         @fields[i].update
       end
     end
-     
+    
     def write # Avoiding the term "serialize" here
 
       if @project.session.conn.exec_params('SELECT * FROM projects_adminmd_descmd WHERE project_name=$1 AND item_number=$2', [ @project.name,
                                                                                                                                @number ]).values.empty?
-
         @project.session.conn.exec_params("INSERT INTO items (project_name, item_number, file_name, thumbnail_file_name, custom_file_name, large_file_name, fullsize_file_name, checksum) VALUES($1, $2, $3, $4, $5, $6, $7, '')",
                                           [ @project.name,
                                             @number,
@@ -208,13 +215,13 @@ require_relative 'metadata'
                                             @large_file_name,
                                             @fullsize_file_name ])
 
+
         # Retrieve the ID
         res = @project.session.conn.exec_params('SELECT id FROM items WHERE project_name=$1 AND item_number=$2', [ @project.name, @number ])
         res.each do |item_record|
 
           @id = item_record['id']
         end
-        
       end
       
       @fields.map {|field| field.insert }
@@ -233,7 +240,7 @@ require_relative 'metadata'
         field = metadata_class.new(self, item_record['element'], item_record['label'], item_record['data'])
 
         # Refactor
-        field.attribute = MetadataAttribute.new(field)
+        # field.attribute = MetadataAttribute.new(field)
 
         @fields << field
         # @fields[item_record['element'] + '.' + item_record['label']] = metadata_class.new(self, item_record['element'], item_record['label'], item_record['data'])

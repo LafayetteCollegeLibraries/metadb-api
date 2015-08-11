@@ -39,4 +39,17 @@ namespace :metadb do
     session = Session.new args.user, args[:password], args[:project_name], args.host
     session.project.set_default_values [ { :element => args.element, :label => args.label, :data => args.data } ]
   end
+
+  desc 'Split a Collection'
+  task :split, [:user, :password, :project_name, :host, :subset_length, :limit] do |t, args|
+
+    args.with_defaults :host => 'localhost', :subset_length => '500', :limit => nil
+    project_options = { :limit => args.limit }
+
+    session = Session.new args.user, args[:password], args[:project_name], args.host, 'metadb', project_options
+
+    # bundle exec rake metadb:split[metadb,l1bd3v,imperial-postcards,139.147.4.144]
+    set = ProjectSet.split session.project, args.subset_length.to_i
+    set.write
+  end
 end

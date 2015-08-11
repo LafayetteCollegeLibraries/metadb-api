@@ -36,7 +36,7 @@
   end
 
   class MetadataAttribute
-    attr_reader :element, :label, :id, :attribute_index
+    attr_reader :element, :label, :id, :attribute_index, :large, :date_searchable
 
     def initialize(field,
                    large = nil,
@@ -79,7 +79,14 @@
       @attribute_index = '0' if @attribute_index.nil?
 
       # Cannot cast this directly into a boolean
-      normalize = lambda { |value| value == 'f' ? false : true }
+      normalize = lambda do |value|
+
+        if value.is_a? String
+          value == 'f' ? false : true
+        else
+          value
+        end
+      end
 
       @large = normalize.call(@large)
       @date_searchable = normalize.call(@date_searchable)
@@ -106,8 +113,30 @@
                                             # @id,
                                             @ui_label)
 
-
       # new_attribute = MetadataAttribute.new(field)
+=begin
+      puts 'trace2'
+      puts [
+            @element,
+            @label,                                            
+            @large,
+            
+            @date_searchable,
+            @date_readable,
+            @controlled,
+            @multiple,
+            @additions,
+
+            @sorted,
+            @attribute_index,
+            @vocab_name,
+            @error,
+            @ui_label,
+           ]
+      exit(1)
+=end
+      
+
     end
 
     def insert
@@ -118,6 +147,30 @@
                                                         @label,
                                                         @md_type,
                                                       ]).values.empty?
+
+=begin
+        puts 'trace'
+        puts [ @project_name,
+                                                         @element,
+                                                         @label,
+                                                         @md_type,
+                                                         @large,
+
+                                                         @date_searchable,
+                                                         @date_readable,
+                                                         @controlled,
+                                                         @multiple,
+                                                         @additions,
+
+                                                         @sorted,
+                                                         @attribute_index,
+                                                         @vocab_name,
+                                                         @error,
+                                                         @ui_label,
+                                                       ]
+        
+        exit(1)
+=end
 
         begin
           
@@ -179,6 +232,7 @@
                                                      @md_type,
                                                    ]).select do |row|
 
+        
         @project_name = row['project_name']
         @element = row['element']
         @label = row['label']

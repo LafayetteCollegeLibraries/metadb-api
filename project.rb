@@ -3,6 +3,7 @@ require 'csv'
 require_relative 'derivative'
 
 include Derivatives
+module MetaDB
 
   # Modeling MetaDB Project entities
   #
@@ -29,9 +30,8 @@ include Derivatives
       # @derivative_options = options.keep_if { |k,v| [ :branding, :branding_text, :image_write_path ].include? k.to_sym }
       @derivative_options = { :image_write_path => @access_path }
 
-      # Uncomment
-      read if items.nil?
-      # @items += items
+      limit = options.fetch :limit, nil
+      read(limit) if items.nil?
 
       @access_images = @items.map { |item| [ Derivative.new( item, @derivative_options ),  LargeDerivative.new( item, @derivative_options ),  CustomDerivative.new( item, @derivative_options ),  ThumbnailDerivative.new( item, @derivative_options ) ] }
       # @access_images = @items.map { |item| [ ThumbnailDerivative.new( item, @derivative_options ) ] }
@@ -116,9 +116,12 @@ include Derivatives
       @items
     end
 
-    def read
+    def read(limit = nil)
 
-      res = @session.conn.exec_params('SELECT item_number,id FROM items WHERE project_name=$1 ORDER BY item_number', [@name])
+      query = "SELECT item_number,id FROM items WHERE project_name=$1 ORDER BY item_number"
+      query += " LIMIT #{limit}" unless limit.nil?
+
+      res = @session.conn.exec_params(query, [@name])
 
       # @todo Remove for debugging
       res.each do |item_record|
@@ -131,7 +134,6 @@ include Derivatives
           puts "Instantiating an item record for #{item_record['item_number']}"
         end
 
-        # @items << Item.new(self, item_record['item_number'], item_record)
         @items << Item.new(self, item_record['item_number'], item_record['id'])
       end
 
@@ -146,7 +148,8 @@ include Derivatives
                                    })
       end
     end
-
+    
+    
     def write
 
       if @session.conn.exec_params('SELECT item_number FROM items WHERE project_name=$1', [@name]).values.empty?
@@ -154,11 +157,43 @@ include Derivatives
         @session.conn.exec_params("INSERT INTO projects (project_name, project_notes, deriv_host) VALUES($1, $2, 'http://metadb.lafayette.edu/')", [@name, ''])
       end
 
+      # Insert the derivative settings
+      if @session.conn.exec_params('SELECT annotation_mode, brand, bg_color, fg_color FROM derivative_settings WHERE project_name=$1', [@name]).values.empty?
+
+        [{:setting_name => 'thumb',
+           :max_width => 300,
+           :max_height => 300,
+         },
+         {:setting_name => 'large',
+           :max_width => 2000,
+           :max_height => 2000,
+         },
+         {:setting_name => 'custom',
+           :max_width => 800,
+           :max_height => 800,
+         },
+         {:setting_name => 'fullsize',
+           :max_width => 0,
+           :max_height => 0,
+         },
+        ].each do |values|
+
+          @session.conn.exec_params("INSERT INTO derivative_settings (project_name, setting_name, max_width, max_height, annotation_mode, brand, bg_color, fg_color, enabled) " + 
+                                    "VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9)", [@name,
+                                                                                   values[:setting_name],
+                                                                                   values[:max_width],
+                                                                                   values[:max_height],
+                                                                                   0,
+                                                                                   @derivative_options[:branding_text],
+                                                                                   @derivative_options[:bg_color],
+                                                                                   @derivative_options[:fg_color],
+                                                                                   true])
+        end
+      end
+      
       @items.map { |item| item.write }.reduce { |results, result| results or result }
     end
-
-
-
+    
     # Derive all images (thumbnail, fullsize, large, and custom) for Items within the Project
     # @param init [Fixnum] Beginning of the range
     # @param term [Fixnum] End of the range
@@ -330,45 +365,44 @@ include Derivatives
     def self.split(project, subset_length = 500)
       
       subset = {}
-      
-      i = 0
-      while project.items.length > i
+      subset_step = 0
 
-        if i == 0
+      while project.items.length >= subset_step
 
-          index = "0001"
-          project_start = i
-          project_length = subset_length - 1
+        if subset_step == 0
+
+          project_index = "%04d" % 1
+          item_step = 0
+          item_slice_length = subset_length - 1
         else
 
-          index = "%04d" % i
-          project_start = i - 1
-          project_length = subset_length
+          project_index = "%04d" % (subset_step)
+          item_step = subset_step - 1
+          item_slice_length = subset_length
         end
 
-        child_project_name = project.name + '-' + index
-
+        child_project_name = project.name + '-' + project_index
         child_project = Project.new(project.session, child_project_name)
         subset[child_project_name] = child_project
 
-        puts "Cloning the item record for the subset #{i}"
+        project.items.slice(item_step, item_slice_length).each do |item|
 
-        # project.items.slice(i - 1, subset_length).each do |item|
-        project.items.slice(project_start, project_length).each do |item|
+          puts "Cloning the item record #{item.number} for #{child_project_name}"
 
-          # Clones the MetaDB Item, and all associated fields
-          # Uncomment
-          item = item.clone(child_project, nil, [], 'lc-spcol-' + project.name)
-          child_project.items << item
+          # project_dir_path = File.join("/var/metadb/master/", @name)
+          new_item = item.clone(child_project, nil, [], project.dir_path, project.name)
+          child_project.items << new_item
         end
 
-        i += (subset_length)
+        subset_step += subset_length
       end
-      
+
       set = ProjectSet.new @session, subset
     end
     
     # Join disparate sets of projects
+    # Please see MDB-90
+    #
     def self.join
       
       nil
@@ -379,3 +413,4 @@ include Derivatives
       @projects.values.map { |project| project.write }.reduce { |results, result| results or result }
     end
   end
+end
