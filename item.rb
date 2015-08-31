@@ -129,7 +129,7 @@ require_relative 'metadata'
       @large_file_name = base_file_name + '-2000.jpg'
       @fullsize_file_name = base_file_name + '.jpg'
 
-      read if @fields.empty?
+      read if not @id.nil? and @fields.empty?
     end
 
     # Clones an Item

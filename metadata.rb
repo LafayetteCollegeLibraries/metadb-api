@@ -113,30 +113,6 @@
                                             # @id,
                                             @ui_label)
 
-      # new_attribute = MetadataAttribute.new(field)
-=begin
-      puts 'trace2'
-      puts [
-            @element,
-            @label,                                            
-            @large,
-            
-            @date_searchable,
-            @date_readable,
-            @controlled,
-            @multiple,
-            @additions,
-
-            @sorted,
-            @attribute_index,
-            @vocab_name,
-            @error,
-            @ui_label,
-           ]
-      exit(1)
-=end
-      
-
     end
 
     def insert

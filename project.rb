@@ -9,6 +9,15 @@ module MetaDB
   #
   class Project
 
+    PREFIXES = {
+      'imperial-postcards' => 'ip',
+      'imperial-postcards-0001' => 'ip',
+      'imperial-postcards-0500' => 'ip',
+      'imperial-postcards-1000' => 'ip',
+      'imperial-postcards-1500' => 'ip',
+      'pacwar-postcards' => 'fd'
+    }
+
     attr_accessor :items
     attr_reader :session, :name, :dir_path
 
@@ -16,6 +25,8 @@ module MetaDB
 
       @session = session
       @name = name
+      
+      @prefix = PREFIXES[@name]
 
       @items = items || []
       # Uncomment
@@ -46,10 +57,8 @@ module MetaDB
       
       # Retrieve the administrative and descriptive metadata
       #
-      res = @session.conn.exec_params('SELECT * FROM projects_adminmd_descmd WHERE project_name=$1 LIMIT 1', [ @name ])
+      res = @session.conn.exec_params('SELECT * FROM projects_adminmd_descmd WHERE project_name=$1 AND item_number=1', [ @name ])
       res.each do |item_record|
-
-        # classes << Item.get_field_class(item_record['element'], item_record['label'])
 
         if classes.has_key? item_record['element']
 
@@ -62,7 +71,7 @@ module MetaDB
 
       # Append the technical metadata fields
       #
-      res = @session.conn.exec_params('SELECT * FROM projects_techmd WHERE project_name=$1 LIMIT 1', [ @name ])
+      res = @session.conn.exec_params('SELECT * FROM projects_techmd WHERE project_name=$1 AND item_number=1', [ @name ])
       res.each do |item_record|
 
         # classes << TechnicalMetadataRecord.new(self, item_record['tech_element'], item_record['tech_label'], item_record['data'])
@@ -89,10 +98,14 @@ module MetaDB
       @field_classes.each_pair do |element, value|
 
         value.each_pair do |label, klass|
-    
-          fields << klass.new(item, element, label)
 
-          # Create the new attribute also?
+          if element == 'title' and label == 'english'
+
+            fields << klass.new(item, element, label, "[#{@prefix}#{"%04d" % item.number}] ")
+          else
+    
+            fields << klass.new(item, element, label)
+          end
         end
       end
 
@@ -245,14 +258,20 @@ module MetaDB
       init = init.to_i
       term = term.to_i
 
+      puts init
+      puts term
+
       access_images = @access_images.select do |access_image_set|
 
         # access_image_set.first.item.number >= init and access_image_set.first.item.number <= term
 
         # Why does to_i need to be explicitly invoked?
         #
+
         access_image_set.first.item.number.to_i >= init and access_image_set.first.item.number.to_i <= term
       end
+
+      puts access_images
 
       access_images.each do |access_image_set|
 
@@ -284,21 +303,39 @@ module MetaDB
     def add(options = {})
 
       item = options.fetch :item, nil
+      item_fields = options.fetch :fields, @fields
       if item.nil?
 
         item_number = options.fetch :number, nil
-        if item_number.nil? and @items.last.nil?
+        item_id = options.fetch :id, nil
 
-          item_number = 1
+        if item_fields
+
+          if item_number.nil? and @items.last.nil?
+
+            item_number = 1
+          else
+
+            item_number = @items.last.number + 1
+          end
+
+          item = Item.new self, item_number, item_id, item_fields
         else
 
-          item_number = @items.last.number + 1
-        end
-        
-        item_id = options.fetch :id, nil
-        item_fields = options.fetch :fields, @fields
+          file_path = options.fetch :file_path, nil
 
-        item = Item.new self, item_number, item_id, item_fields
+          # Create the new Item
+          item = Item.new self, item_number, file_path: file_path
+
+          # Retrieve the fields
+          item.fields = fields(item)
+
+          # Add the access images
+          @access_images << [ Derivative.new( item, @derivative_options ),  LargeDerivative.new( item, @derivative_options ),  CustomDerivative.new( item, @derivative_options ),  ThumbnailDerivative.new( item, @derivative_options ) ]
+
+          derive item.number, item.number
+          derive_thumbnails item.number, item.number
+        end
       end
 
       item.write

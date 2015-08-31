@@ -40,7 +40,7 @@ namespace :metadb do
     session.project.set_default_values [ { :element => args.element, :label => args.label, :data => args.data } ]
   end
 
-  desc 'Split a Collection'
+  desc 'Split a Project'
   task :split, [:user, :password, :project_name, :host, :subset_length, :limit] do |t, args|
 
     args.with_defaults :host => 'localhost', :subset_length => '500', :limit => nil
