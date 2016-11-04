@@ -1,6 +1,7 @@
 
 require_relative 'item'
 
+module MetaDB
 module Derivatives
 
   BRANDING_NONE = 0
@@ -16,14 +17,9 @@ module Derivatives
     def initialize(item, options = {})
 
       @item = item
-      
-      # @todo Refactor
       @branding = options.fetch :branding, BRANDING_UNDER
-      # @branding = BRANDING_UNDER
 
       @branding_text = options.fetch :branding_text, nil
-#      @bg_color = options.fetch :bg_color, '#000000'
-#      @fg_color = options.fetch :fg_color, '#FFFFFF'
       @bg_color = options.fetch :bg_color, 'White'
       @fg_color = options.fetch :fg_color, 'Black'
 
@@ -36,25 +32,6 @@ module Derivatives
       @input_image = MiniMagick::Image.open(@input_image_path)
 
       current_or_new_width = @width || @input_image.width
-
-=begin
-      @font_size = case current_or_new_width
-                   when 300..500
-                     8
-                   when 500..1000
-                     16
-                   when 1000..1400
-                     24
-                   when 1400..1800
-                     48
-                   when 1800..2200
-                     72
-                   when 2200..3000
-                     85
-                   else
-                     100
-                   end
-=end
       @font_size = case current_or_new_width
                    when 300..500
                      4
@@ -68,49 +45,39 @@ module Derivatives
                      24
                    end
 
-      # Not for srida
-      if @item.project.name == 'srida'
-
-        output_image_name = "lc-spcol-#{@item.project.name}-#{ '%06d' % @item.number}"
+      # File name structure is unique for the Silk Road Instrument project
+      if @item.project.name == SILK_ROAD
+        output_image_name = "#{@item.derivative_base}-#{ '%06d' % @item.number}"
       else
-
-        output_image_name = "lc-spcol-#{@item.project.name}-#{ '%04d' % @item.number}"
+        output_image_name = "#{@item.derivative_base}-#{ '%04d' % @item.number}"
       end
 
       output_image_name += "-#{@width}" unless @width.nil?
       output_image_name += ".jpg"
-
       output_image_path = "#{@image_write_path}/#{output_image_name}"
 
       MiniMagick::Tool::Convert.new do |convert|
-
         unless @width.nil? or @height.nil?
-
           convert << '-resize'
           convert << "#{@width}x"
         end
 
-        convert << @input_image_path
+        convert << "#{@input_image_path}[0]"
 
         if not @branding_text.nil? and @branding != BRANDING_NONE
-
           convert << "-size"
           convert << "#{current_or_new_width}x"
-
           convert << "-gravity"
           convert << "Center"
-
           convert << "-font"
           convert << "Bitstream-Charter-Regular"
 
           unless @font_size.nil?
-
             convert << "-pointsize"
             convert << @font_size
           end
           
           convert << "caption:#{@branding_text}"
-
           convert << "+swap" if @branding == BRANDING_OVER
           convert << "-append"
         end
@@ -118,21 +85,18 @@ module Derivatives
         convert << output_image_path
       end
 
-      class_name_segments = self.class.name.match /\:{2}(.+?)Derivative$/
+      class_name_segments = self.class.name.match /Derivatives\:{2}(.+?)Derivative$/
       if class_name_segments
-
         class_name_type = class_name_segments[1]
       else
-
         class_name_type = 'fullsize'
       end
 
       @item.instance_variable_set "@#{class_name_type}_file_name", output_image_name
-      # @item.write
+      @item.write
 
       @input_image.destroy!
 
-      # @output_image_path = File.new(output_image_path)
       output_image_path
     end
   end
@@ -176,4 +140,5 @@ module Derivatives
       super item, options
     end
   end
+end
 end

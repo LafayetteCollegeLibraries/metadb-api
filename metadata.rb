@@ -31,8 +31,24 @@
       end
 
       # Retrieve the primary key
-      # read
+      read
     end
+
+    def read
+
+      @field.item.project.session.conn.exec_params('SELECT project_name, tech_element, tech_label, custom_attributes_techmd WHERE project_name=$1 AND tech_element=$2 AND tech_label=$3',
+                                                   [ @project_name,
+                                                     @tech_element,
+                                                     @tech_label,
+                                                   ]).select do |row|
+
+        
+        @project_name = row['project_name']
+        @tech_element = row['tech_element']
+        @tech_label = row['tech_label']
+      end
+    end
+
   end
 
   class MetadataAttribute
@@ -123,30 +139,6 @@
                                                         @label,
                                                         @md_type,
                                                       ]).values.empty?
-
-=begin
-        puts 'trace'
-        puts [ @project_name,
-                                                         @element,
-                                                         @label,
-                                                         @md_type,
-                                                         @large,
-
-                                                         @date_searchable,
-                                                         @date_readable,
-                                                         @controlled,
-                                                         @multiple,
-                                                         @additions,
-
-                                                         @sorted,
-                                                         @attribute_index,
-                                                         @vocab_name,
-                                                         @error,
-                                                         @ui_label,
-                                                       ]
-        
-        exit(1)
-=end
 
         begin
           
@@ -248,8 +240,6 @@
         @data = data
       end
 
-      # @logger.info 'instantiating the field ' + @element + '.' + @label + ' for ' + @item.number
-
       # Ensure that the record within custom_attributes_adminmd_descmd exists
       @attribute = MetadataAttribute.new(self) if @attribute.nil?
     end
@@ -264,9 +254,6 @@
       res.each do |row|
 
         @data = row['data']
-
-        # @attribute_id = row['attribute_id'].to_i
-        # @attribute = MetadataAttribute.new(self)
       end
     end
 
@@ -316,7 +303,6 @@
     end
   end
 
-  # 
   # @todo Implement
   class TechnicalMetadataRecord
 
@@ -349,15 +335,10 @@
     
     def read
 
-      # @item.project.session.conn.exec_params('SELECT data,attribute_id FROM projects_adminmd_descmd WHERE project_name=$1 AND item_number=$2 AND md_type=$3 AND element=$4 AND label=$5',
-      #                                       [@item.project.name, @item.number, @md_type, @element, @label]).select do |row|
       @item.project.session.conn.exec_params('SELECT tech_data FROM projects_techmd WHERE project_name=$1 AND item_number=$2 AND tech_element=$3 AND tech_label=$4',
                                              [@item.project.name, @item.number, @tech_element, @tech_label]).select do |row|
 
         @tech_data = row['tech_data']
-
-        # @attribute_id = row['attribute_id'].to_i
-        # @attribute = MetadataAttribute.new(self)
       end
     end
 

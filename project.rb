@@ -2,8 +2,9 @@
 require 'csv'
 require_relative 'derivative'
 
-include Derivatives
 module MetaDB
+
+  SILK_ROAD = 'srida'
 
   # Modeling MetaDB Project entities
   #
@@ -21,7 +22,7 @@ module MetaDB
     attr_accessor :items
     attr_reader :session, :name, :dir_path
 
-    def initialize(session, name, items = nil, options = {})
+    def initialize(session, name, items = [], options = {})
 
       @session = session
       @name = name
@@ -29,8 +30,6 @@ module MetaDB
       @prefix = PREFIXES[@name]
 
       @items = items || []
-      # Uncomment
-      # @items = (1..1808).to_a
 
       @dir_path = options.fetch :dir_path, File.join("/var/metadb/master/", @name)
       @access_path = options.fetch :access_path, File.join("/var/metadb/access/", @name)
@@ -38,14 +37,13 @@ module MetaDB
       # Populate the fields
       @field_classes = field_classes
 
-      # @derivative_options = options.keep_if { |k,v| [ :branding, :branding_text, :image_write_path ].include? k.to_sym }
       @derivative_options = { :image_write_path => @access_path }
 
       limit = options.fetch :limit, nil
-      read(limit) if items.nil?
 
-      @access_images = @items.map { |item| [ Derivative.new( item, @derivative_options ),  LargeDerivative.new( item, @derivative_options ),  CustomDerivative.new( item, @derivative_options ),  ThumbnailDerivative.new( item, @derivative_options ) ] }
-      # @access_images = @items.map { |item| [ ThumbnailDerivative.new( item, @derivative_options ) ] }
+      read(limit) if items.empty?
+
+      @access_images = @items.map { |item| [ Derivatives::Derivative.new( item, @derivative_options ),  Derivatives::LargeDerivative.new( item, @derivative_options ),  Derivatives::CustomDerivative.new( item, @derivative_options ),  Derivatives::ThumbnailDerivative.new( item, @derivative_options ) ] }
     end
 
     # Retrieve the classes for the fields in the project
@@ -56,31 +54,31 @@ module MetaDB
       classes = {}
       
       # Retrieve the administrative and descriptive metadata
-      #
-      res = @session.conn.exec_params('SELECT * FROM projects_adminmd_descmd WHERE project_name=$1 AND item_number=1', [ @name ])
+      res = @session.conn.exec_params('SELECT * FROM projects_adminmd_descmd WHERE project_name=$1 LIMIT 1', [ @name ])
       res.each do |item_record|
 
-        if classes.has_key? item_record['element']
+        admin_desc_element = item_record['element']
 
-          classes[item_record['element']][item_record['label']] = Item.get_field_class(item_record['element'], item_record['label'])
-        else
-
-          classes[item_record['element']] = { item_record['label'] => Item.get_field_class(item_record['element'], item_record['label']) }
+        if admin_desc_element
+          if classes.has_key? admin_desc_element
+            classes[item_record['element']][item_record['label']] = Item.get_field_class(item_record['element'], item_record['label'])
+          else
+            classes[item_record['element']] = { item_record['label'] => Item.get_field_class(item_record['element'], item_record['label']) }
+          end
         end
       end
 
       # Append the technical metadata fields
-      #
-      res = @session.conn.exec_params('SELECT * FROM projects_techmd WHERE project_name=$1 AND item_number=1', [ @name ])
+      res = @session.conn.exec_params('SELECT * FROM projects_techmd WHERE project_name=$1 LIMIT 1', [ @name ])
       res.each do |item_record|
 
-        # classes << TechnicalMetadataRecord.new(self, item_record['tech_element'], item_record['tech_label'], item_record['data'])
-        if classes.has_key? item_record['tech_element']
-
-          classes[item_record['tech_element']][item_record['tech_label']] = TechnicalMetadataRecord
-        else
-
-          classes[item_record['tech_element']] = { item_record['tech_label'] => TechnicalMetadataRecord }
+        tech_element = item_record['tech_element']
+        if tech_element
+          if classes.has_key? item_record['tech_element']
+            classes[item_record['tech_element']][item_record['tech_label']] = TechnicalMetadataRecord
+          else
+            classes[item_record['tech_element']] = { item_record['tech_label'] => TechnicalMetadataRecord }
+          end
         end
       end
 
@@ -131,6 +129,17 @@ module MetaDB
 
     def read(limit = nil)
 
+      # Retrieve settings in relation to project derivative generation
+      res = @session.conn.exec_params('SELECT annotation_mode, brand, bg_color, fg_color FROM derivative_settings WHERE project_name=$1', [@name])
+      res.each do |derivative_settings|
+
+        @derivative_options.merge!({ :branding => 1,
+                                     :branding_text => derivative_settings['brand'],
+                                     :bg_color => derivative_settings['bg_color'],
+                                     :fg_color => derivative_settings['fg_color']
+                                   })
+      end
+
       query = "SELECT item_number,id FROM items WHERE project_name=$1 ORDER BY item_number"
       query += " LIMIT #{limit}" unless limit.nil?
 
@@ -138,31 +147,11 @@ module MetaDB
 
       # @todo Remove for debugging
       res.each do |item_record|
-
-        if self.respond_to? :logger
-
-          logger.info "Instantiating an item record for #{item_record['item_number']}"
-        else
-
-          puts "Instantiating an item record for #{item_record['item_number']}"
-        end
-
+        
         @items << Item.new(self, item_record['item_number'], item_record['id'])
       end
-
-      # Retrieve settings in relation to project derivative generation
-      res = @session.conn.exec_params('SELECT annotation_mode, brand, bg_color, fg_color FROM derivative_settings WHERE project_name=$1', [@name])
-      res.each do |derivative_settings|
-
-        @derivative_options.merge!({ :branding => derivative_settings['annotation_mode'],
-                                     :branding_text => derivative_settings['brand'],
-                                     :bg_color => derivative_settings['bg_color'],
-                                     :fg_color => derivative_settings['fg_color']
-                                   })
-      end
     end
-    
-    
+
     def write
 
       if @session.conn.exec_params('SELECT item_number FROM items WHERE project_name=$1', [@name]).values.empty?
@@ -221,8 +210,6 @@ module MetaDB
 
       access_images = @access_images.select do |access_image_set|
 
-        # access_image_set.first.item.number >= init and access_image_set.first.item.number <= term
-
         # Why does to_i need to be explicitly invoked?
         #
         access_image_set.first.item.number.to_i >= init and access_image_set.first.item.number.to_i <= term
@@ -230,19 +217,7 @@ module MetaDB
 
       access_images.each do |access_image_set|
 
-        begin
-          
-          access_image_set.map { |access_image| access_image.derive }
-        rescue Exception => ex
-
-          if respond_to? :logger
-
-            logger.error "Failed to generated the following derivatives: #{ex.message}"
-          else
-
-            $stderr.puts "Failed to generated the following derivatives: #{ex.message}"
-          end
-        end
+        access_image_set.map { |access_image| access_image.derive }
       end.reduce(:+)
     end
 
@@ -258,41 +233,19 @@ module MetaDB
       init = init.to_i
       term = term.to_i
 
-      puts init
-      puts term
-
       access_images = @access_images.select do |access_image_set|
-
-        # access_image_set.first.item.number >= init and access_image_set.first.item.number <= term
-
-        # Why does to_i need to be explicitly invoked?
-        #
 
         access_image_set.first.item.number.to_i >= init and access_image_set.first.item.number.to_i <= term
       end
 
-      puts access_images
-
       access_images.each do |access_image_set|
 
-        begin
-          
-          access_image_set.select do |access_image|
+        access_image_set.select do |access_image|
 
-            access_image.is_a? ThumbnailDerivative
-          end.map do |access_image|
+          access_image.is_a? Derivatives::ThumbnailDerivative
+        end.map do |access_image|
 
-            access_image.derive
-          end
-        rescue Exception => ex
-
-          if respond_to? :logger
-
-            logger.error "Failed to generated the following derivatives: #{ex.message}"
-          else
-
-            $stderr.puts "Failed to generated the following derivatives: #{ex.message}"
-          end
+          access_image.derive
         end
       end.reduce(:+)      
     end
@@ -304,8 +257,10 @@ module MetaDB
 
       item = options.fetch :item, nil
       item_fields = options.fetch :fields, @fields
-      if item.nil?
+      dir_path = options.fetch :dir_path, @dir_name
+      derivative_base = options.fetch :derivative_base, nil
 
+      if item.nil?
         item_number = options.fetch :number, nil
         item_id = options.fetch :id, nil
 
@@ -319,22 +274,15 @@ module MetaDB
             item_number = @items.last.number + 1
           end
 
-          item = Item.new self, item_number, item_id, item_fields
+          item = Item.new self, item_number, item_id, item_fields, dir_path: dir_path, derivative_base: derivative_base
         else
-
           file_path = options.fetch :file_path, nil
 
           # Create the new Item
-          item = Item.new self, item_number, file_path: file_path
+          item = Item.new self, item_number, file_path: file_path, dir_path: dir_path, derivative_base: derivative_base
 
           # Retrieve the fields
           item.fields = fields(item)
-
-          # Add the access images
-          @access_images << [ Derivative.new( item, @derivative_options ),  LargeDerivative.new( item, @derivative_options ),  CustomDerivative.new( item, @derivative_options ),  ThumbnailDerivative.new( item, @derivative_options ) ]
-
-          derive item.number, item.number
-          derive_thumbnails item.number, item.number
         end
       end
 
@@ -347,7 +295,6 @@ module MetaDB
     #
     def parse
 
-      # Dir.glob("#{@dir_path}/*.tiff?|jpe?g") do |master_file_name|
       Dir.glob("#{@dir_path}/*.{tif,tiff,TIF,TIFF,jpg,jpeg,JPG,JPEG}") do |master_file_name|
 
         # Attempt to construct the Item using the file path alone
@@ -424,9 +371,6 @@ module MetaDB
 
         project.items.slice(item_step, item_slice_length).each do |item|
 
-          puts "Cloning the item record #{item.number} for #{child_project_name}"
-
-          # project_dir_path = File.join("/var/metadb/master/", @name)
           new_item = item.clone(child_project, nil, [], project.dir_path, project.name)
           child_project.items << new_item
         end
@@ -435,14 +379,6 @@ module MetaDB
       end
 
       set = ProjectSet.new @session, subset
-    end
-    
-    # Join disparate sets of projects
-    # Please see MDB-90
-    #
-    def self.join
-      
-      nil
     end
     
     def write

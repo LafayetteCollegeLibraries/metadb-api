@@ -3,6 +3,8 @@ require_relative 'project'
 
 module MetaDB
 
+  SILK_ROAD = 'srida'
+
   class Session
     attr_reader :conn, :project
     
