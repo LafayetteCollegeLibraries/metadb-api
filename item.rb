@@ -94,8 +94,6 @@ module MetaDB
       @custom_file_name = base_file_name + '-800.jpg'
       @large_file_name = base_file_name + '-2000.jpg'
       @fullsize_file_name = base_file_name + '.jpg'
-
-      read if not @id.nil? and @fields.empty?
     end
 
     # Clones an Item
@@ -216,6 +214,23 @@ module MetaDB
 
         @fields << field
       end
+    end
+
+    def export
+      read
+
+      {
+        :project => @project.name,
+        :number => @number,
+        :file_path => @file_path,
+        :metadata => @fields.map do |field|
+          {
+            :element => field.element,
+            :label => field.label,
+            :data => field.data
+          }
+        end
+      }
     end
   end
 end

@@ -4,8 +4,6 @@ require_relative 'derivative'
 
 module MetaDB
 
-  SILK_ROAD = 'srida'
-
   # Modeling MetaDB Project entities
   #
   class Project
@@ -40,8 +38,6 @@ module MetaDB
       @derivative_options = { :image_write_path => @access_path }
 
       limit = options.fetch :limit, nil
-
-      read(limit) if items.empty?
 
       @access_images = @items.map { |item| [ Derivatives::Derivative.new( item, @derivative_options ),  Derivatives::LargeDerivative.new( item, @derivative_options ),  Derivatives::CustomDerivative.new( item, @derivative_options ),  Derivatives::ThumbnailDerivative.new( item, @derivative_options ) ] }
     end
@@ -127,7 +123,7 @@ module MetaDB
       @items
     end
 
-    def read(limit = nil)
+    def read_derivative_options
 
       # Retrieve settings in relation to project derivative generation
       res = @session.conn.exec_params('SELECT annotation_mode, brand, bg_color, fg_color FROM derivative_settings WHERE project_name=$1', [@name])
@@ -139,7 +135,22 @@ module MetaDB
                                      :fg_color => derivative_settings['fg_color']
                                    })
       end
+    end
 
+    def item(item_number)
+      item = Item.new(self, item_number)
+    end
+
+    def export_item(item_number)
+      item(item_number).export
+    end
+
+    def export
+      read
+      @items.map { |item| item.export }
+    end
+
+    def read(limit = nil)
       query = "SELECT item_number,id FROM items WHERE project_name=$1 ORDER BY item_number"
       query += " LIMIT #{limit}" unless limit.nil?
 
@@ -147,7 +158,6 @@ module MetaDB
 
       # @todo Remove for debugging
       res.each do |item_record|
-        
         @items << Item.new(self, item_record['item_number'], item_record['id'])
       end
     end

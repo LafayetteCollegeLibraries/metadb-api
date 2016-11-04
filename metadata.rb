@@ -233,10 +233,8 @@
       @attribute = attribute
 
       if data.nil?
-
         read
       else
-
         @data = data
       end
 
