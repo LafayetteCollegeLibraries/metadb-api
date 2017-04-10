@@ -18,7 +18,7 @@ module MetaDB
     }
 
     attr_accessor :items
-    attr_reader :session, :name, :dir_path
+    attr_reader :session, :name, :dir_path, :back_dir_path
 
     def initialize(session, name, items = [], options = {})
 
@@ -31,6 +31,7 @@ module MetaDB
 
       @dir_path = options.fetch :dir_path, File.join("/var/metadb/master/", @name)
       @access_path = options.fetch :access_path, File.join("/var/metadb/access/", @name)
+      @back_dir_path = options.fetch :back_dir_path, File.join("/var/metadb/master_backs/", @name, "backs")
 
       # Populate the fields
       @field_classes = field_classes

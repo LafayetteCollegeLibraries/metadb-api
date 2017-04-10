@@ -26,6 +26,7 @@ module MetaDB
       @fields = fields
 
       dir_path = @project.dir_path if dir_path.nil?
+      back_dir_path = @project.back_dir_path if back_dir_path.nil?
 
       @derivative_base = derivative_base.nil? ? "lc-spcol-#{@project.name}" : derivative_base
 
@@ -94,6 +95,13 @@ module MetaDB
       @custom_file_name = base_file_name + '-800.jpg'
       @large_file_name = base_file_name + '-2000.jpg'
       @fullsize_file_name = base_file_name + '.jpg'
+
+      # Retrieve the second file (if a back exists)
+      back_files = Dir.glob("#{back_dir_path}/#{base_file_name}b*")
+      unless back_files.empty?
+        @back_file_path = back_files.first
+        @back_file_name = back_files.first
+      end
     end
 
     # Clones an Item
@@ -223,6 +231,7 @@ module MetaDB
         :project => @project.name,
         :number => @number,
         :file_path => @file_path,
+        :back_file_path => @back_file_path,
         :metadata => @fields.map do |field|
           {
             :element => field.element,
