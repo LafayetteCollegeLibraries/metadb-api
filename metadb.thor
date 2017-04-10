@@ -61,21 +61,6 @@ class Metadb < Thor
     end
   end
 
-  desc "ingest_item", "Ingest an Item from a Project"
-  option :bag, :aliases => "-b", :desc => "bag", :required => true
-  option :url, :aliases => "-u", :desc => "url", :default => 'http://localhost/concern/works'
-  def ingest_item()
-
-    bag_filename = options[:bag]
-    original_filename = File.basename(bag_filename)
-    bag_content = Base64.encode64(File.read(bag_filename))
-
-    post_body = {file: "data:application/zip;base64,#{bag_content}", original_filename: original_filename}
-    puts 'transmitting POST request'
-    response = HTTParty.post(options[:url], body: post_body, verify: false)
-    puts response.body
-  end
-
   desc "export_item", "Export an Item from a Project"
   option :user, :aliases => "-u", :desc => "user", :default => 'metadb'
   option :password, :aliases => "-p", :desc => "password", :default => 'secret'
@@ -83,6 +68,7 @@ class Metadb < Thor
   option :item_number, :aliases => "-i", :desc => "item number", :required => true, :type => :numeric
   option :host, :aliases => "-h", :desc => "host", :default => 'localhost'
   option :output_dir, :aliases => "-o", :desc => "output directory for the Items"
+  option :jp2_only, :aliases => "-j", :desc => "only export the JPEG2000 derivative", :default => true
   def export_item()
     session = MetaDB::Session.new options[:user], options[:password], options[:project_name], options[:host], options[:user]
     item_record = session.project(options[:project_name]).export_item(options[:item_number])
@@ -114,11 +100,15 @@ class Metadb < Thor
     
     # Add the image to the Bag
     bag = BagIt::Bag.new bag_name
-    
-    # bag.add_file(item_file_path.split('/').last, item_file_path)
-    # bag.add_file(item_back_file_path.split('/').last, item_back_file_path) if item_back_file_path
-    bag.add_file(item_jp2_path.split('/').last, item_jp2_path)
-    bag.add_file(item_back_jp2_path.split('/').last, item_back_jp2_path) if item_back_file_path
+
+    if options[:jp2_only]
+      bag.add_file(item_jp2_path.split('/').last, item_jp2_path)
+      bag.add_file(item_back_jp2_path.split('/').last, item_back_jp2_path) if item_back_file_path
+    else
+      bag.add_file(item_file_path.split('/').last, item_file_path)
+      bag.add_file(item_back_file_path.split('/').last, item_back_file_path) if item_back_file_path
+    end
+
     bag.add_file("#{bag_name}_metadata.csv", "#{bag_name}_metadata.csv")
     
     # generate the manifest and tagmanifest files

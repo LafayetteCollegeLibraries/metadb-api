@@ -1,11 +1,16 @@
 require 'pg'
-require_relative 'project'
-require_relative 'vocabulary'
+
+require_relative 'metadb/project'
+require_relative 'metadb/item'
+require_relative 'metadb/metadata'
+require_relative 'metadb/vocabulary'
+require_relative 'metadb/term'
+require_relative 'metadb/derivative'
 
 module MetaDB
 
   SILK_ROAD = 'srida'
-
+  
   class Session
     attr_reader :conn, :project
     

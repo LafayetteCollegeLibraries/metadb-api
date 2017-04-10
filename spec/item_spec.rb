@@ -5,7 +5,13 @@ require_relative 'spec_helper'
 describe MetaDB::Item do
 
   #  '/var/metadb/master/test-project'
-  let(:project) { instance_double('Project', :name => 'test-project', :session => @session, :dir_path => File.join(File.dirname(__FILE__), 'fixtures')) }
+  let(:project) do
+    instance_double('Project',
+                    :name => 'test-project',
+                    :session => @session,
+                    :dir_path => File.join(File.dirname(__FILE__), 'fixtures'),
+                    :back_dir_path => File.join(File.dirname(__FILE__), 'fixtures', 'backs'))
+  end
 
   describe '.new' do
 

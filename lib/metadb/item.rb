@@ -1,6 +1,5 @@
 
 require 'mini_magick'
-require_relative 'metadata'
 
 module MetaDB
   class Item
@@ -164,8 +163,6 @@ module MetaDB
       end
     end
 
-#    require 'pry-remote'
-    
     def write # Avoiding the term "serialize" here
 
       existing_items = @project.session.conn.exec_params('SELECT * FROM projects_adminmd_descmd WHERE project_name=$1 AND item_number=$2', [ @project.name, @number ])
