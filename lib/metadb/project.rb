@@ -72,9 +72,9 @@ module MetaDB
         tech_element = item_record['tech_element']
         if tech_element
           if classes.has_key? item_record['tech_element']
-            classes[item_record['tech_element']][item_record['tech_label']] = TechnicalMetadataRecord
+            classes[item_record['tech_element']][item_record['tech_label']] = Metadata::TechnicalMetadataRecord
           else
-            classes[item_record['tech_element']] = { item_record['tech_label'] => TechnicalMetadataRecord }
+            classes[item_record['tech_element']] = { item_record['tech_label'] => Metadata::TechnicalMetadataRecord }
           end
         end
       end

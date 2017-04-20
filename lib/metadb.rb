@@ -1,14 +1,12 @@
 require 'pg'
-
-require_relative 'metadb/project'
-require_relative 'metadb/item'
-require_relative 'metadb/metadata'
-require_relative 'metadb/vocabulary'
-require_relative 'metadb/term'
-require_relative 'metadb/derivative'
+require 'metadb/project'
+require 'metadb/item'
+require 'metadb/metadata'
+require 'metadb/vocabulary'
+require 'metadb/term'
+require 'metadb/derivative'
 
 module MetaDB
-
   SILK_ROAD = 'srida'
   
   class Session
