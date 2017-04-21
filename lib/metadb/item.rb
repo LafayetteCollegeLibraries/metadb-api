@@ -213,10 +213,10 @@ module MetaDB
                                                                                                                           @number ])
       res.each do |item_record|
 
-        field = TechnicalMetadataRecord.new(self, item_record['tech_element'], item_record['tech_label'], item_record['data'])
+        field = Metadata::TechnicalMetadataRecord.new(self, item_record['tech_element'], item_record['tech_label'], item_record['data'])
 
         # Refactor
-        field.attribute = TechnicalMetadataAttribute.new(field)
+        field.attribute = Metadata::TechnicalMetadataAttribute.new(field)
 
         @fields << field
       end

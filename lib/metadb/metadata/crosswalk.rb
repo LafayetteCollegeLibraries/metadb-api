@@ -5,7 +5,7 @@ module MetaDB
   module Metadata
     class Crosswalk
 
-      def self.normalize(value, metadb_label)
+      def self.normalize(value, metadb_label, delimiter = ';')
         normal_values = []
 
         if not value.nil? and not value.empty?
@@ -14,16 +14,12 @@ module MetaDB
             case metadb_label
             when 'url.download'
               single_value.split('?item=').last
-            when 'url.zoom'
-              ''
-            when 'dmrecord'
-              ''
             else
               single_value
             end
           end
         end
-        normal_values
+        normal_values.join(delimiter)
       end
 
       def self.predicate_for(metadb_element, metadb_label)
@@ -118,16 +114,21 @@ module MetaDB
         when 'identifier'
           predicate = ::RDF::Vocab::DC.identifier
         else
-          raise NotImplementedError.new
+          raise NotImplementedError.new "No predicate for #{metadb_element}.#{metadb_label}"
         end
       end
 
       def self.transform(metadb_metadata)
-        transformed_metadata = []
-        transformed_metadata << ["predicate", "object"]
+        transformed_metadata = {}
 
-        metadb_metadata.each do |record|
-          transformed_metadata << [ predicate_for(record[:element], record[:label]).to_s, normalize(record[:data], record[:label]) ]
+        # Filter for technical metadata
+        metadb_metadata.reject {|record| record[:element].include?('.technical') || FILTERED_FIELDS.include?(record[:label]) }.each do |record|
+          predicate = MetaDB::Metadata::Terms.mint(record[:element], record[:label]).to_s
+          if transformed_metadata.has_key?(predicate) && !transformed_metadata[predicate].empty?
+            transformed_metadata[predicate] += ';' + normalize(record[:data], record[:label])
+          else
+            transformed_metadata[predicate] = normalize(record[:data], record[:label])
+          end
         end
 
         transformed_metadata

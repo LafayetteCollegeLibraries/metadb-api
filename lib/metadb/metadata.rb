@@ -12,6 +12,11 @@ require_relative 'metadata/technical_metadata_record'
 module MetaDB
   module Metadata
 
+    FILTERED_FIELDS = [
+                       'url.zoom',
+                       'dmrecord'
+                      ]
+
     CUSTOM_LABELS = [
       'location.image',
       'location.postmark',

@@ -5,12 +5,7 @@ describe MetaDB::Metadata::Crosswalk do
   describe '.normalize' do
 
     it 'splits MetaDB field values' do
-      expect(described_class.normalize('foo;bar;baz', '')).to eql(['foo','bar','baz'])
-    end
-
-    it 'nullifies blacklisted values' do
-      expect(described_class.normalize('invalid', 'url.zoom')).to eql([''])
-      expect(described_class.normalize('also invalid', 'dmrecord')).to eql([''])
+      expect(described_class.normalize('foo;bar;baz', '')).to eql('foo;bar;baz')
     end
   end
 
@@ -33,9 +28,8 @@ describe MetaDB::Metadata::Crosswalk do
       it 'transforms MetaDB metadata records' do
 
         transformed = described_class.transform(metadata)
-        expect(transformed.first).to eql(["predicate", "object"])
-        expect(transformed).to include(["http://authority.lafayette.edu/ns/metadb/dateImageLower", ["1932"]])
-        expect(transformed).to include(["http://authority.lafayette.edu/ns/metadb/dateImageUpper", ["1933-02-14","1934-03-15"]])
+        expect(transformed).to include({"http://authority.lafayette.edu/ns/metadb/dateImageLower" => "1932"})
+        expect(transformed).to include({"http://authority.lafayette.edu/ns/metadb/dateImageUpper" => "1933-02-14;1934-03-15"})
       end
     end
   end
