@@ -1,5 +1,6 @@
 
 require 'mini_magick'
+require_relative 'metadata'
 
 module MetaDB
   class Item
@@ -11,11 +12,11 @@ module MetaDB
     def self.get_field_class(element, label)
       
       field_name = (element + '.' + label).downcase
-      if AdminRecord::FIELD_NAMES.include? field_name
-        return AdminRecord
+      if Metadata::AdminRecord::FIELD_NAMES.include? field_name
+        return Metadata::AdminRecord
       end
       
-      DescRecord
+      Metadata::DescRecord
     end
 
     def initialize(project, number = nil, id = nil, fields = [], project_name = nil, file_path: nil, dir_path: nil, derivative_base: nil)
@@ -128,7 +129,7 @@ module MetaDB
           # For each new field, an accompanying attribute must also be instantiated
           # (This resolves issues in which the foreign key constraints between projects_adminmd_descmd and custom_attributes_adminmd_descmd must not be violated)
           # @todo Move this into the constructor for the field
-          if new_field.is_a? AdminDescRecord
+          if new_field.is_a? Metadata::AdminDescRecord
             new_field.attribute = field.attribute.clone new_field, field.attribute.attribute_index
           else
             new_field.attribute = field.attribute.clone new_field
@@ -212,10 +213,10 @@ module MetaDB
                                                                                                                           @number ])
       res.each do |item_record|
 
-        field = TechnicalMetadataRecord.new(self, item_record['tech_element'], item_record['tech_label'], item_record['data'])
+        field = Metadata::TechnicalMetadataRecord.new(self, item_record['tech_element'], item_record['tech_label'], item_record['data'])
 
         # Refactor
-        field.attribute = TechnicalMetadataAttribute.new(field)
+        field.attribute = Metadata::TechnicalMetadataAttribute.new(field)
 
         @fields << field
       end

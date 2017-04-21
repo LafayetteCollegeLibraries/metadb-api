@@ -27,26 +27,14 @@ describe MetaDB::Project do
   end
 
   describe '.new' do
-
     context 'without Items' do
-
       it 'creates a new Project' do
 
         # Work-around
         item_class = class_double('Item',
                                   :new => item,
-                                  :get_field_class => AdminDescRecord).as_stubbed_const
+                                  :get_field_class => MetaDB::Metadata::AdminDescRecord).as_stubbed_const
 
-#        expect(conn).to receive(:exec_params).with('SELECT item_number,id FROM items WHERE project_name=$1 ORDER BY item_number', ['test-project']).and_return([])
-=begin
- got: ("SELECT * FROM projects_adminmd_descmd WHERE project_name=$1 LIMIT 1", ["test-project"]) (1 time)
-                   ("SELECT * FROM projects_techmd WHERE project_name=$1 LIMIT 1", ["test-project"]) (1 time)
-
-=end
-
-#      expect(conn).to receive(:exec_params).with('SELECT * FROM projects_adminmd_descmd WHERE project_name=$1 LIMIT 1', ['test-project']).and_return([{ 'element' => 'descriptive',
-#                                                                                                                                                        'label' => 'coverage'}])
-        
         @project = described_class.new session, 'test-project', [item]
 
         expect(@project.name).to eq('test-project')
@@ -61,10 +49,9 @@ describe MetaDB::Project do
       it 'creates a new Project' do
 
         # Work-around
-        # item_class = class_double('Item', :new => item ).as_stubbed_const
         item_class = class_double('Item',
                                   :new => item,
-                                  :get_field_class => AdminDescRecord).as_stubbed_const
+                                  :get_field_class => MetaDB::Metadata::AdminDescRecord).as_stubbed_const
 
         @project = described_class.new session, 'test-project', items
 
@@ -73,8 +60,6 @@ describe MetaDB::Project do
         expect(@project.items.length).to eq 1
         expect(@project.items.first.number).to eq 2
         expect(@project.items.first.file_name).to eq 'lc-spcol-test-project-0002.tif'
-#        expect(@project.items.last.number).to eq 2
-#        expect(@project.items.last.file_name).to eq 'lc-spcol-test-project-0002.tif'
       end
     end
   end
@@ -97,10 +82,9 @@ describe MetaDB::Project do
     it 'derives images for all Items' do
 
       # Work-around
-      # item_class = class_double('Item', :new => item ).as_stubbed_const
       item_class = class_double('Item',
                                 :new => item,
-                                :get_field_class => AdminDescRecord).as_stubbed_const
+                                :get_field_class => MetaDB::Metadata::AdminDescRecord).as_stubbed_const
       
       derivative_class = class_double('Derivative', :new => derivative).as_stubbed_const
       large_derivative_class = class_double('LargeDerivative', :new => large_derivative).as_stubbed_const
