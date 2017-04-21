@@ -131,7 +131,7 @@ module MetaDB
 
         # Filter for technical metadata
         metadb_metadata.reject {|record| record[:element].include?('.technical') || FILTERED_FIELDS.include?(record[:label]) }.each do |record|
-          predicate = predicate_for(record[:element], record[:label])
+          predicate = predicate_for(record[:element], record[:label]).to_s
           if transformed_metadata.has_key?(predicate) && !transformed_metadata[predicate].empty?
             transformed_metadata[predicate] += ';' + normalize(record[:data], record[:label])
           else
