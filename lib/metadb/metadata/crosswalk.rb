@@ -23,6 +23,14 @@ module MetaDB
       end
 
       def self.predicate_for(metadb_element, metadb_label)
+        if metadb_label.empty? && ::RDF::Vocab::DC[metadb_element]
+          ::RDF::Vocab::DC[metadb_element]
+        else
+          MetaDB::Metadata::Terms.mint(metadb_element, metadb_label)
+        end
+      end
+
+      def self.custom_predicate_for(metadb_element, metadb_label)
         case metadb_element
         when 'contributor'
           predicate = ::RDF::Vocab::DC.contributor
@@ -123,7 +131,7 @@ module MetaDB
 
         # Filter for technical metadata
         metadb_metadata.reject {|record| record[:element].include?('.technical') || FILTERED_FIELDS.include?(record[:label]) }.each do |record|
-          predicate = MetaDB::Metadata::Terms.mint(record[:element], record[:label]).to_s
+          predicate = predicate_for(record[:element], record[:label])
           if transformed_metadata.has_key?(predicate) && !transformed_metadata[predicate].empty?
             transformed_metadata[predicate] += ';' + normalize(record[:data], record[:label])
           else

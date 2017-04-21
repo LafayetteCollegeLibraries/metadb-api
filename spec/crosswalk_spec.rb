@@ -14,6 +14,17 @@ describe MetaDB::Metadata::Crosswalk do
     it 'generates predicates for custom MetaDB fields' do
       expect(described_class.predicate_for('date', 'image.lower').to_s).to eql('http://authority.lafayette.edu/ns/metadb/dateImageLower')
     end
+
+    it 'generates predicates for Dublin Core fields' do
+      expect(described_class.predicate_for('date', '').to_s).to eql(::RDF::Vocab::DC.date.to_s)
+    end
+  end
+
+  describe '.custom_predicate_for' do
+
+    it 'generates predicates for custom MetaDB fields' do
+      expect(described_class.predicate_for('date', 'image.lower').to_s).to eql('http://authority.lafayette.edu/ns/metadb/dateImageLower')
+    end
   end
 
   context 'with Item metadata' do
