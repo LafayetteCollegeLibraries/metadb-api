@@ -12,11 +12,6 @@ require_relative 'metadata/technical_metadata_record'
 module MetaDB
   module Metadata
 
-    FILTERED_FIELDS = [
-                       'url.zoom',
-                       'dmrecord'
-                      ]
-
     CUSTOM_LABELS = [
       'location.image',
       'location.postmark',
@@ -101,6 +96,21 @@ module MetaDB
       'relation.work.textref.name',
       'subject.work.subject.term'
     ]
+
+    FILTERED_FIELDS = [
+      'url.zoom',
+      'dmrecord'
+    ]
+
+    DC_ELEMENTS = [
+      'created',
+      'identifier',
+      'rights',
+      'source',
+      'title',
+      'type'
+    ]
+
   end
 end
 
