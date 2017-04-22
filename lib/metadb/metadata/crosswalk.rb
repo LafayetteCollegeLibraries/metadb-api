@@ -23,8 +23,13 @@ module MetaDB
       end
 
       def self.predicate_for(metadb_element, metadb_label)
-        if metadb_label.empty? && ::RDF::Vocab::DC[metadb_element]
-          ::RDF::Vocab::DC[metadb_element]
+        if metadb_label.empty?
+          case metadb_element
+          when *DC_ELEMENTS
+            ::RDF::Vocab::DC[metadb_element]
+          else
+            ::RDF::Vocab::DC11[metadb_element]
+          end
         else
           MetaDB::Metadata::Terms.mint(metadb_element, metadb_label)
         end
