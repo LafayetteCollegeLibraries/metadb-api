@@ -131,6 +131,15 @@ module MetaDB
         end
       end
 
+      def self.extract_title(metadb_metadata)
+        titles = metadb_metadata.select {|record| record[:element].include?('title')}
+        if titles.empty?
+          ''
+        else
+          titles.last[:data]
+        end
+      end
+
       def self.transform(metadb_metadata)
         transformed_metadata = {}
 
@@ -142,6 +151,11 @@ module MetaDB
           else
             transformed_metadata[predicate] = normalize(record[:data], record[:label])
           end
+        end
+
+        # Ensure that the required fields have been added
+        unless transformed_metadata.has_key?(::RDF::Vocab::DC.title.to_s)
+          transformed_metadata[::RDF::Vocab::DC.title.to_s] = extract_title(metadb_metadata)
         end
 
         transformed_metadata
