@@ -39,7 +39,8 @@ describe MetaDB::Metadata::Crosswalk do
   context 'with Item metadata' do
     let(:metadata) do
       [
-        {:element => 'date', :label => 'image.lower', :data => '1932'},
+        {:element => 'title', :label => 'english', :data => 'test title'},
+        {:element => 'date', :label => 'image.lower', :data => '1932'},        
         {:element => 'date', :label => 'image.upper', :data => '1933-02-14;1934-03-15'}
       ]
     end
@@ -48,6 +49,8 @@ describe MetaDB::Metadata::Crosswalk do
       it 'transforms MetaDB metadata records' do
 
         transformed = described_class.transform(metadata)
+        expect(transformed).to include({::RDF::Vocab::DC.title.to_s => "test title"})        
+        expect(transformed).to include({"http://authority.lafayette.edu/ns/metadb/titleEnglish" => "test title"})
         expect(transformed).to include({"http://authority.lafayette.edu/ns/metadb/dateImageLower" => "1932"})
         expect(transformed).to include({"http://authority.lafayette.edu/ns/metadb/dateImageUpper" => "1933-02-14;1934-03-15"})
       end
