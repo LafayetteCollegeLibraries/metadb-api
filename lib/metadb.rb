@@ -19,13 +19,11 @@ module MetaDB
                                   :password => password,
                                   :dbname => db_name)
 
-      project(project_name) if project_name
+      read_project(project_name) if project_name
     end
 
-    def project(project_name)
-      if project_name
-        @project = Project.new(self, project_name, [], {})
-      end
+    def read_project(project_name)
+      @project = Project.new(self, project_name, [], {})
     end
 
     def vocabulary(vocabulary_name)

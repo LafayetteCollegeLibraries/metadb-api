@@ -17,8 +17,8 @@ module MetaDB
       'pacwar-postcards' => 'fd'
     }
 
-    attr_accessor :items
     attr_reader :session, :name, :dir_path, :back_dir_path
+    attr_writer :items
 
     def initialize(session, name, items = [], options = {})
 
@@ -161,6 +161,11 @@ module MetaDB
       res.each do |item_record|
         @items << Item.new(self, item_record['item_number'], item_record['id'])
       end
+      @items
+    end
+
+    def items
+      @items.empty? ? read : @items
     end
 
     def write
