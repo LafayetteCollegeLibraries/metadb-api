@@ -76,6 +76,8 @@ module MetaDB
         end
 
         case project.name
+        when MCKELVY_HOUSE
+          file_exts = ['.tif', '.jpeg', '.jpg']
         when GEOLOGY_SLIDES_ESI
           file_exts = ['.tif', '.jpeg', '.jpg']
         when SILK_ROAD
