@@ -61,6 +61,19 @@ module MetaDB
           # Extended handling for project with anomalous file naming schemes
           # @todo Refactor
           case project.name
+          when BIOL101
+            base_project_name = project.name.gsub(/\-\d{4}/, '')
+
+            case number
+            when 1..286
+              base_file_name = base_project_name + '-201009-assignment01-' + ("%04d" % number)
+            when 287..1046
+              base_file_name = base_project_name + '-201009-assignment02-' + ("%04d" % number)
+            when 1047..1237
+              base_file_name = base_project_name + '-201009-assignment03-' + ("%04d" % number)
+            else
+              base_file_name = base_project_name + '-201009-assignment04-' + ("%04d" % number)
+            end
           when GEOLOGY_SLIDES
             base_project_name = project.name.gsub(/\-\d{4}/, '')
             base_file_name = 'lc-' + base_project_name + '-' + ("%04d" % number)
@@ -76,6 +89,8 @@ module MetaDB
         end
 
         case project.name
+        when BIOL101
+          file_exts = ['.tif', '.jpeg', '.jpg']
         when MCKELVY_HOUSE
           file_exts = ['.tif', '.jpeg', '.jpg']
         when GEOLOGY_SLIDES_ESI

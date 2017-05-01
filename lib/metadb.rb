@@ -7,6 +7,7 @@ require_relative 'metadb/term'
 require_relative 'metadb/derivative'
 
 module MetaDB
+  BIOL101 = 'biol101'
   GEOLOGY_SLIDES = 'geology-slides'
   GEOLOGY_SLIDES_ESI = 'geology-slides-esi'
   MCKELVY_HOUSE = 'mckelvy-house'
