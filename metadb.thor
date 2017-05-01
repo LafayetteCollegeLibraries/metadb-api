@@ -10,11 +10,6 @@ class Metadb < Thor
   
   no_commands do
 
-#    def export(user, password, project_name, item_number, output_dir, pg_host: 'localhost', pg_user: 'metadb', jp2_only: false)
-      
-#      session = MetaDB::Session.new options[:user], options[:password], options[:project_name], options[:host], options[:user]
-#      item_record = session.project(options[:project_name]).export_item(options[:item_number])
-
     def export(item_record, output_dir, jp2_only: false)
 
       # Generate the name for the Bag
@@ -33,6 +28,7 @@ class Metadb < Thor
       end
 
       bag_name = item_file_path.split('/').last.gsub(/\.tif/, '')
+      bag_name = bag_name.split('/').last.gsub(/\.jpe?g/, '')
       metadata_file_name = "#{bag_name}_metadata.csv"
 
       # Create the CSV for the metadata
