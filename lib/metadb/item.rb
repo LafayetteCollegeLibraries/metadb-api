@@ -60,7 +60,14 @@ module MetaDB
 
           # Extended handling for project with anomalous file naming schemes
           # @todo Refactor
-          if project.name == SILK_ROAD
+          case project.name
+          when GEOLOGY_SLIDES
+            base_project_name = project.name.gsub(/\-\d{4}/, '')
+            base_file_name = 'lc-' + base_project_name + '-' + ("%04d" % number)
+          when GEOLOGY_SLIDES_ESI
+            base_project_name = project.name.gsub(/\-\d{4}/, '')
+            base_file_name = 'lc-' + base_project_name + '-' + ("%04d" % number)
+          when SILK_ROAD
             base_file_name = 'lc-spcol-' + project.name + '-' + ("%06d" % number)
           else
             base_project_name = project.name.gsub(/\-\d{4}/, '')
@@ -68,7 +75,10 @@ module MetaDB
           end
         end
 
-        if project.name == SILK_ROAD
+        case project.name
+        when GEOLOGY_SLIDES_ESI
+          file_exts = ['.tif', '.jpeg', '.jpg']
+        when SILK_ROAD
           file_exts = ['.tif', '.jpeg', '.jpg']
         else
           file_exts = ['.tif']
