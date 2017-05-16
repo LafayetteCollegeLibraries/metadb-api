@@ -171,22 +171,23 @@ module MetaDB
       # @todo Remove for debugging
       res.each do |item_record|
         item = Item.new(self, item_record['item_number'], item_record['id'])
-        yield(item) if block_given?
         @items << item
       end
       @items
     end
 
-    def items(first = nil, last = nil, &block)
+    def items(first = nil, last = nil)
       
       if @items.empty?
-        read(first, last, &block)
+        read(first, last)
       elsif first
         if last
-          @items[first..last].each(&block)
+          @items[first..last]
         else
-          @items[first..-1].each(&block)
+          @items[first..-1]
         end
+      else
+        @items
       end
     end
 
