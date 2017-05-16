@@ -106,10 +106,26 @@ class Metadb < Thor
   option :project_name, :aliases => "-P", :desc => "project", :required => true
   option :host, :aliases => "-h", :desc => "host", :default => 'localhost'
   option :output_dir, :aliases => "-o", :desc => "output directory for the Items", :required => true
+  option :first, :aliases => "-f", :desc => "first Item in the subset being exported"
+  option :last, :aliases => "-l", :desc => "last Item in the subset being exported"
   option :jp2_only, :aliases => "-j", :desc => "only export the JPEG2000 derivative", :type => :boolean, :default => true
   def export_project()
     session = MetaDB::Session.new options[:user], options[:password], options[:project_name], options[:host], options[:user]
-    session.project.items.each do |item|
+
+    last = options.fetch(:last, nil)
+    first = options.fetch(:first, nil)
+
+    items = if first
+              if last
+                session.project.items(first.to_i, last.to_i)
+              else
+                session.project.items(first.to_i)
+              end
+            else
+              session.project.items
+            end
+
+    items.each do |item|
       item_record = session.project.export_item(item.number)
       export(item_record, options[:output_dir], jp2_only: options[:jp2_only])
     end
@@ -140,14 +156,11 @@ class Metadb < Thor
   end
 
   desc "create", "Create an Item within a Project"
-
   option :file, :aliases => "-f", :desc => "file path", :required => true
   option :number, :aliases => "-n", :desc => "number", :default => 1, :type => :numeric
-
   option :user, :aliases => "-u", :desc => "user", :default => 'metadb'
   option :password, :aliases => "-p", :desc => "password", :default => 'secret'
   option :host, :aliases => "-h", :desc => "host", :default => 'localhost'
-
   option :project_name, :aliases => "-P", :desc => "project name", :required => true
   option :dir_path, :aliases => "-d", :desc => "project directory path"
   option :derivative_base, :aliases => "-D", :desc => "derivative base"

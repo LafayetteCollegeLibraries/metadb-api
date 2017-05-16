@@ -11,3 +11,6 @@ gem 'bagit'
 gem 'rubyzip', '>= 1.0.0'
 gem 'httparty'
 gem "rdf-vocab"
+group :development do
+  gem 'byebug'
+end

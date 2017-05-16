@@ -151,21 +151,44 @@ module MetaDB
       @items.map { |item| item.export }
     end
 
-    def read(limit = nil)
-      query = "SELECT item_number,id FROM items WHERE project_name=$1 ORDER BY item_number"
-      query += " LIMIT #{limit}" unless limit.nil?
+    def read(first = nil, last = nil)
+      params = [@name]
+      query = "SELECT item_number,id FROM items WHERE project_name=$1 "
 
-      res = @session.conn.exec_params(query, [@name])
+      if first
+        query += "AND item_number >= $2 "
+        params << first
+      end
+
+      if last
+        query += "AND item_number <= $3 " if last
+        params << last
+      end
+
+      query += "ORDER BY item_number"
+      res = @session.conn.exec_params(query, params)
 
       # @todo Remove for debugging
       res.each do |item_record|
-        @items << Item.new(self, item_record['item_number'], item_record['id'])
+        item = Item.new(self, item_record['item_number'], item_record['id'])
+        @items << item
       end
       @items
     end
 
-    def items
-      @items.empty? ? read : @items
+    def items(first = nil, last = nil)
+      
+      if @items.empty?
+        read(first, last)
+      elsif first
+        if last
+          @items[first..last]
+        else
+          @items[first..-1]
+        end
+      else
+        @items
+      end
     end
 
     def write
