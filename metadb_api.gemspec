@@ -15,5 +15,16 @@ Gem::Specification.new do |spec|
   spec.test_files  = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
   spec.homepage    = 'https://github.com/LafayetteCollegeLibraries/metadb-api'
-  spec.license     = 'GPLv3'
+  spec.license     = 'GPL-3.0'
+  
+  spec.add_dependency 'bagit', '~> 0.4'
+  spec.add_dependency 'mini_magick', '~> 4.7'
+  spec.add_dependency 'pg', '~> 0.20'
+  spec.add_dependency 'rake', '~> 12.0'
+  spec.add_dependency 'rdf-vocab', '~> 2.2'
+  spec.add_dependency 'rubyzip', '~> 1.2'
+  spec.add_dependency 'thor', '~> 0.19'
+  
+  spec.add_development_dependency 'rspec', '~> 3.5'
+  spec.add_development_dependency 'rspec-mocks', '~> 3.5'
 end

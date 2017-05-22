@@ -1,16 +1,15 @@
 source 'https://rubygems.org'
 
-gem 'pg'
-gem 'rspec'
-gem 'rspec-mocks'
-gem 'mini_magick'
-gem 'coveralls', require: false
-gem 'rake'
-gem 'thor'
 gem 'bagit'
-gem 'rubyzip', '>= 1.0.0'
-gem 'httparty'
+gem 'mini_magick'
+gem 'pg'
+gem 'rake'
 gem "rdf-vocab"
-group :development do
+gem 'rubyzip', '>= 1.0.0'
+gem 'thor'
+group :development, :test do
   gem 'byebug'
+  gem 'coveralls', require: false
+  gem 'rspec'
+  gem 'rspec-mocks'
 end
