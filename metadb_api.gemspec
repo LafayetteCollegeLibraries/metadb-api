@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency 'mini_magick', '~> 4.7'
   spec.add_dependency 'pg', '~> 0.20'
   spec.add_dependency 'rake', '~> 12.0'
-  spec.add_dependency 'rdf-vocab', '~> 2.2'
+  spec.add_dependency 'rdf-vocab', '~> 0.8'
   spec.add_dependency 'rubyzip', '~> 1.2'
   spec.add_dependency 'thor', '~> 0.19'
   
